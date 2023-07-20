@@ -1,0 +1,13 @@
+#include "resource.h"
+#include <afxres.h>
+
+ID_ICON ICON "noname.ico"
+
+ID_INPUT DIALOG 0, 0, 200, 62
+STYLE WS_POPUP | WS_CAPTION | WS_VISIBLE
+FONT 8, "Ebrima"
+CAPTION "Change Name" {
+	EDITTEXT ID_EDIT_INPUT, 5, 5, 190, 32, ES_MULTILINE
+	PUSHBUTTON "Change", ID_BUTTON_INPUT, 45, 42, 50, 15
+	PUSHBUTTON "Cancel", ID_BUTTON_CANCEL, 105, 42, 50, 15
+}
