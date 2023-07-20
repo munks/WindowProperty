@@ -1,0 +1,22 @@
+#pragma once
+
+//Macro - Case Switch
+#define WindowEventCase(c)	switch(c)
+#define DialogEventCase(c)	switch(c)
+#define SizingEventCase(c)	switch(c)
+#define NotifyEventCase(c)	switch(c)
+#define WindowEvent(e)		case e:
+#define DialogEvent(e)		case e:
+#define SizingEvent(e)		case e:
+#define NotifyEvent(e)		case e:
+
+//Macro - Useful Combine
+#define EventDialog()		LOWORD(wParam)
+#define EventMessage()		HIWORD(wParam)
+#define ListViewMessage()	((LPNMHDR)lParam)->code
+#define ListViewDialog()	((LPNMHDR)lParam)->hwndFrom
+
+extern HWND m_main;
+extern HINSTANCE m_hInstance;
+extern HFONT m_font;
+extern HKEY m_regkey;
