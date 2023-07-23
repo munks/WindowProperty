@@ -1,8 +1,6 @@
 #pragma once
 
 #define LV_MAX_COL 4
-#define Control_CreateButtonM(h, y, id, ckb) \
-		Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, ckb, 475, y, 100, 30, ID_BUTTON_##id);
 
 //Typedef Function
 typedef HIMAGELIST (*ILC)(int, int, UINT, int, int);

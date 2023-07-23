@@ -2,6 +2,7 @@
 
 #define Icon_GetMenu() i_menu
 
+void Icon_SetIconState (WORD, BOOL);
 void Icon_ExecuteNotifyEvent (WORD);
 void Icon_AddNotifyIcon (HWND);
 void Icon_RemoveNotifyIcon ();

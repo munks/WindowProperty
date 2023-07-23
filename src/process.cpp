@@ -9,7 +9,6 @@ wchar_t p_caption[MAX_PATH];
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
 
 LRESULT CALLBACK InputProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	wchar_t text[MAX_PATH];
 	HWND tmphwnd;
 		
 	#ifdef _DEBUG
@@ -41,8 +40,8 @@ LRESULT CALLBACK InputProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 						tmphwnd = reinterpret_cast<HWND>(lParam);
 						
 						if (Edit_GetTextLength(tmphwnd) > MAX_PATH) {
-							Edit_GetText(tmphwnd, text, MAX_PATH);
-							Edit_SetText(tmphwnd, text);
+							Edit_GetText(tmphwnd, p_caption, MAX_PATH);
+							Edit_SetText(tmphwnd, p_caption);
 						}
 					}
 					break;
