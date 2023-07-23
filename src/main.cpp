@@ -13,6 +13,14 @@ HKEY m_regkey;
 
 //Function
 
+void Main_Close () {
+	DeleteObject(m_font);
+	RegCloseKey(m_regkey);
+	Icon_RemoveNotifyIcon();
+	FreeLibrary(c_comctlModule);
+	PostQuitMessage(0);
+}
+
 LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 	wchar_t pidhwnd[10];
@@ -104,6 +112,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 							case ID_BUTTON_OPEN:
 								executionFunc = Process_OpenDirectory; break;
 						}
+						
 						ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 0, name, 30);
 						if (name[0] == L'*') { wcscpy(name, name + 1); }
 						
@@ -124,6 +133,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 						changed = Button_GetCheck((HWND)lParam);
 						
 						changed ? Hook_MoveCallbackAttach() : Hook_MoveCallbackDetach();
+						Icon_SetIconState(TN_MENU_MOVE, changed);
 						RegSetValueEx(m_regkey, L"MoveActive", 0, REG_BINARY, (BYTE*)&changed, sizeof(BYTE));
 					}
 					break;
@@ -202,6 +212,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	//Duplicate Prevent
 	if (FindWindow(WINDOW_MAIN_NAME, NULL) != NULL) {
 		ShowWindow(FindWindow(WINDOW_MAIN_NAME, NULL), SW_RESTORE);
+		SetForegroundWindow(FindWindow(WINDOW_MAIN_NAME, NULL));
 		return 0;
 	}
 	
@@ -239,13 +250,13 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	Log_CreateWindow(m_main);
 
 	//Create Button(CHANGE)
-	m_changeButton = Control_CreateButtonM(m_main, 20, CHANGE, false);
+	m_changeButton = Control_CreateButton(m_main, BUTTON_CHANGE_CAPTION, BUTTON_CHANGE_TOOLTIP, false, 475, 20, 100, 30, ID_BUTTON_CHANGE);
 	
 	//Create Button(NAME)
-	Control_CreateButtonM(m_main, 60, NAME, false);
+	Control_CreateButton(m_main, BUTTON_NAME_CAPTION, BUTTON_NAME_TOOLTIP, false, 475, 60, 100, 30, ID_BUTTON_NAME);
 	
 	//Create Button(OPACITY)
-	Control_CreateButtonM(m_main, 100, OPACITY, false);
+	Control_CreateButton(m_main, BUTTON_OPACITY_CAPTION, BUTTON_OPACITY_TOOLTIP, false, 475, 100, 100, 30, ID_BUTTON_OPACITY);
 	
 	//Create Edit(OPACITY-ALPHA)
 	Control_CreateEdit(m_main, BUTTON_OPACITY_TOOLTIP, 475, 135, 27, 20, ID_EDIT_ALPHA, L"100");
@@ -254,29 +265,22 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	Control_CreateStatic(m_main, 510, 135, 16, 20, ID_STATIC_PERCENTAGE, L"%");
 	
 	//Create Button(FULL SCREEN)
-	Control_CreateButtonM(m_main, 160, SCREEN, false);
+	Control_CreateButton(m_main, BUTTON_SCREEN_CAPTION, BUTTON_SCREEN_TOOLTIP, false, 475, 160, 100, 30, ID_BUTTON_SCREEN);
 	
 	//Create Button(CAPTION)
-	m_captionButton = Control_CreateButtonM(m_main, 200, CAPTION, false);
-	
-	//Create Button(PIP Mode)
-	Control_CreateButtonM(m_main, 240, PIP, false);
+	m_captionButton = Control_CreateButton(m_main, BUTTON_CAPTION_CAPTION, BUTTON_CAPTION_TOOLTIP, false, 475, 200, 100, 30, ID_BUTTON_CAPTION);
 	
 	//Create Button(Command Line)
-	Control_CreateButtonM(m_main, 280, CMD, false);
+	Control_CreateButton(m_main, BUTTON_CMD_CAPTION, BUTTON_CMD_TOOLTIP, false, 475, 240, 100, 30, ID_BUTTON_CMD);
 	
 	//Create Button(Open)
-	Control_CreateButtonM(m_main, 320, OPEN, false);
+	Control_CreateButton(m_main, BUTTON_OPEN_CAPTION, BUTTON_OPEN_TOOLTIP, false, 475, 280, 100, 30, ID_BUTTON_OPEN);
+	
+	//Create Button(PIP Mode)
+	//Control_CreateButton(m_main, BUTTON_PIP_CAPTION, BUTTON_PIP_TOOLTIP, false, 475, 320, 100, 30, ID_BUTTON_PIP);
 	
 	//Create Button(MOVE)
-	m_moveButton = Control_CreateButtonM(m_main, 360, MOVE, true);
-	
-	//Get Registry (MOVE)
-	moveActive = 0;
-	size = sizeof(BYTE);
-	RegGetValue(m_regkey, NULL, L"MoveActive", RRF_RT_REG_BINARY, NULL, &moveActive, &size);
-	Button_SetCheck(m_moveButton, moveActive ? BST_CHECKED : BST_UNCHECKED);
-	if (moveActive) { Hook_MoveCallbackAttach(); }
+	m_moveButton = Control_CreateButton(m_main, BUTTON_MOVE_CAPTION, BUTTON_MOVE_TOOLTIP, true, 475, 360, 100, 30, ID_BUTTON_MOVE);
 	
 	//Create List-View
 	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 390, ID_LIST);
@@ -286,6 +290,14 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	Icon_RemoveNotifyIcon();
 	Icon_AddNotifyIcon(m_main);
 	Icon_MakeMenu();
+	
+	//Get Registry (MOVE)
+	moveActive = 0;
+	size = sizeof(BYTE);
+	RegGetValue(m_regkey, NULL, L"MoveActive", RRF_RT_REG_BINARY, NULL, &moveActive, &size);
+	Button_SetCheck(m_moveButton, moveActive ? BST_CHECKED : BST_UNCHECKED);
+	Icon_SetIconState(TN_MENU_MOVE, moveActive);
+	if (moveActive) { Hook_MoveCallbackAttach(); }
 	
 	//Show Window (Main)
 	UpdateWindow(m_main);

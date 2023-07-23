@@ -8,7 +8,7 @@ bool CheckErrorFunc (void* checkVar, LPCSTR file, int line, LPCSTR targetValName
 	if (checkVar == NULL) {
 		sprintf(errmsg, "Window Processing Error\nOn File - %s, In Line - %d\nVariable Name - %s, Error Code - %d", file, line, targetValName, GetLastError());
 		MessageBoxA(NULL, errmsg, "Error", MB_OK | MB_ICONERROR);
-		Icon_ExecuteNotifyEvent(TN_MENU_CLOSE);
+		Main_Close();
 	}
 	
 	return true;

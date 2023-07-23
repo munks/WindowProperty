@@ -16,6 +16,8 @@
 #define ListViewMessage()	((LPNMHDR)lParam)->code
 #define ListViewDialog()	((LPNMHDR)lParam)->hwndFrom
 
+void Main_Close ();
+
 extern HWND m_main;
 extern HINSTANCE m_hInstance;
 extern HFONT m_font;

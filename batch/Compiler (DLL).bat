@@ -1,7 +1,7 @@
 @echo off
 echo Compile Start
 
-cd ../DLLInjection
+cd ../DLL
 
 g++32 main.cpp -o ../bin/dllinjector_x86.exe -mwindows -municode
 g++32 cmdline.cpp -o ../bin/cmdline_x86.dll -mwindows -shared

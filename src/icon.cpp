@@ -4,24 +4,32 @@
 
 GUID i_guid = {0x8DAD0D50, 0x1DCF, 0x4233, {0xB6, 0x70, 0x28, 0x43, 0x8D, 0x33, 0x4D, 0x9E}};
 HMENU i_menu;
+MENUITEMINFO i_mi = {sizeof(MENUITEMINFO), MIIM_STATE, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0};
+NOTIFYICONDATA i_nid = {sizeof(NOTIFYICONDATA), NULL, 0, 0, WM_ICONNOTIFY, NULL, WINDOW_MAIN_NAME,
+						0, 0, {0}, 0, {0}, 0, i_guid, NULL};
 
 #define AppendMenuString(menu, option, idtf, str) AppendMenu(menu, MF_STRING | option, MAKELONG(ID_BUTTON_ICON, idtf), str)
 #define AppendMenuSeparator(menu) AppendMenu(menu, MF_SEPARATOR, 0, NULL)
 
 //External
 
+void Icon_SetIconState (WORD message, BOOL on) {
+	GetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, message), false, &i_mi);
+	if (on) {
+		i_mi.fState |= MFS_CHECKED;
+	} else {
+		i_mi.fState &= ~MFS_CHECKED;
+	}
+	SetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, message), false, &i_mi);
+}
+
 void Icon_ExecuteNotifyEvent (WORD message) {
 	RECT rect;
-	wchar_t menuStr[30];
-	MENUITEMINFO mi = {0};
+	BOOL changed;
 	
 	switch (message) {
 		case TN_MENU_CLOSE: {
-			DeleteObject(m_font);
-			RegCloseKey(m_regkey);
-			Icon_RemoveNotifyIcon();
-			FreeLibrary(c_comctlModule);
-			PostQuitMessage(0);
+			Main_Close();
 			return;
 		}
 		case TN_MENU_LOG: {
@@ -34,53 +42,37 @@ void Icon_ExecuteNotifyEvent (WORD message) {
 			ShowWindow(l_window, SW_SHOW);
 			break;
 		}
-		case TN_MENU_OPTION1:
-		case TN_MENU_OPTION2:
-		case TN_MENU_OPTION3: {
-			//Toggle The Triggered Option
-			mi.cbSize = sizeof(MENUITEMINFO);
-			mi.fMask = MIIM_STRING | MIIM_STATE;
-			mi.dwTypeData = menuStr;
-			mi.cch = 30;
-			
-			GetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, message), false, &mi);
-			mi.fState ^= MFS_CHECKED;
-			SetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, message), false, &mi);
+		case TN_MENU_MOVE: {
+			GetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, TN_MENU_MOVE), false, &i_mi);
+			i_mi.fState ^= MFS_CHECKED;
+			SetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, TN_MENU_MOVE), false, &i_mi);
+			changed = ((i_mi.fState & MFS_CHECKED) == MFS_CHECKED) ? BST_CHECKED : BST_UNCHECKED;
+			Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_MOVE), changed);
+			changed ? Hook_MoveCallbackAttach() : Hook_MoveCallbackDetach();
+			RegSetValueEx(m_regkey, L"MoveActive", 0, REG_BINARY, (BYTE*)&changed, sizeof(BYTE));
 			break;
 		}
 	}
 }
 
 void Icon_AddNotifyIcon (HWND main) {
-	NOTIFYICONDATA nid = {0, };
+	i_nid.hWnd = main;
+	i_nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID;
+	i_nid.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 	
-	nid.cbSize = sizeof(NOTIFYICONDATA);
-	nid.hWnd = main;
-	nid.guidItem = i_guid;
-	nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID;
-	nid.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
-	nid.uCallbackMessage = WM_ICONNOTIFY;
-	wcscpy(nid.szTip, WINDOW_MAIN_NAME);
-	
-	Shell_NotifyIcon(NIM_ADD, &nid);
+	Shell_NotifyIcon(NIM_ADD, &i_nid);
 }
 
 void Icon_RemoveNotifyIcon () {
-	NOTIFYICONDATA nid = {0, };
+	i_nid.uFlags = NIF_GUID;
 	
-	nid.cbSize = sizeof(NOTIFYICONDATA);
-	nid.uFlags = NIF_GUID;
-	nid.guidItem = i_guid;
-	
-	Shell_NotifyIcon(NIM_DELETE, &nid);
+	Shell_NotifyIcon(NIM_DELETE, &i_nid);
 }
 
 void Icon_MakeMenu () {
 	i_menu = CreatePopupMenu();
 	
-	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_OPTION1, L"Dummy Option1");
-	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_OPTION2, L"Dummy Option2");
-	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_OPTION3, L"Dummy Option3");
+	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_MOVE, L"Move Active");
 	AppendMenuSeparator(i_menu);
 	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_LOG, L"Log");
 	AppendMenuSeparator(i_menu);
