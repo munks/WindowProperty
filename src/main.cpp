@@ -52,7 +52,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 					c_listViewIndex = ListView_GetNextItem(ListViewDialog(), -1, LVNI_FOCUSED | LVNI_SELECTED);
 					ListView_GetItemText(ListViewDialog(), c_listViewIndex, 3, pidhwnd, 10);
 					
-					tmphwnd = reinterpret_cast<HWND>(_wtoi(pidhwnd));
+					tmphwnd = (HWND)_wtoi(pidhwnd);
 					changed = GetLayeredWindowAttributes(tmphwnd, NULL, &alpha, NULL);
 					
 					Control_SetChangeText(tmphwnd, m_changeButton, m_captionButton);
@@ -118,10 +118,10 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 						
 						//Selected Process Execution
 						ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
-						if (IsWindow(reinterpret_cast<HWND>(_wtoi(pidhwnd)))) {
-							executionFunc(reinterpret_cast<HWND>(_wtoi(pidhwnd)), hwnd, name);
+						if (IsWindow((HWND)_wtoi(pidhwnd))) {
+							executionFunc((HWND)_wtoi(pidhwnd), hwnd, name);
 						} else {
-							Log_Message(L"윈도우를 찾을 수 없습니다. (HWND: %u)", reinterpret_cast<HWND>(_wtoi(pidhwnd)), name);
+							Log_Message(L"윈도우를 찾을 수 없습니다. (HWND: %u)", (HWND)_wtoi(pidhwnd), name);
 						}
 						Control_RefreshListView();
 					}
@@ -142,7 +142,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 					//Edit Control Limit(0~100)
 					if (EventMessage() == EN_UPDATE) {
 						value = GetDlgItemInt(hwnd, ID_EDIT_ALPHA, NULL, false);
-						tmphwnd = reinterpret_cast<HWND>(lParam);
+						tmphwnd = (HWND)lParam;
 						
 						Edit_GetText(tmphwnd, text, 4);
 						if (value < 0) { value = 0; }
@@ -237,7 +237,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
 	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ID_ICON));
 	
-	Util_CheckError(reinterpret_cast<void*>(MAKELONG(RegisterClassEx(&wc), 0)));
+	Util_CheckError((void*)(MAKELONG(RegisterClassEx(&wc), 0)));
 	
 	//Create Main Window
 	m_main = CreateWindowEx(WS_EX_TOPMOST, WINDOW_MAIN_NAME, WINDOW_MAIN_CAPTION,
@@ -299,9 +299,14 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	Icon_SetIconState(TN_MENU_MOVE, moveActive);
 	if (moveActive) { Hook_MoveCallbackAttach(); }
 	
+	//Get Registry (INIT)
+	Icon_SetIconState(TN_MENU_INIT, !RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", L"WindowProperty", RRF_RT_REG_SZ, NULL, NULL, NULL));
+	
 	//Show Window (Main)
 	UpdateWindow(m_main);
-	ShowWindow(m_main, SW_SHOW);
+	if (strcmp(pCmdLine, "-hide")) {
+		ShowWindow(m_main, SW_SHOW);
+	}
 	
 	//Message Loop
 	MSG msg = {};

@@ -11,6 +11,25 @@ NOTIFYICONDATA i_nid = {sizeof(NOTIFYICONDATA), NULL, 0, 0, WM_ICONNOTIFY, NULL,
 #define AppendMenuString(menu, option, idtf, str) AppendMenu(menu, MF_STRING | option, MAKELONG(ID_BUTTON_ICON, idtf), str)
 #define AppendMenuSeparator(menu) AppendMenu(menu, MF_SEPARATOR, 0, NULL)
 
+//Internal
+
+void SetStartup (BOOL add) {
+	HKEY tmpkey;
+	wchar_t path[MAX_PATH];
+	wchar_t regval[MAX_PATH];
+	
+	GetModuleFileName(NULL, path, MAX_PATH);
+	swprintf(regval, L"\"%s\" -hide", path);
+	
+	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
+	if (!add) {
+		RegDeleteValue(tmpkey, L"WindowProperty");
+	} else {
+		RegSetValueEx(tmpkey, L"WindowProperty", 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
+	}
+	RegCloseKey(tmpkey);
+}
+
 //External
 
 void Icon_SetIconState (WORD message, BOOL on) {
@@ -42,14 +61,22 @@ void Icon_ExecuteNotifyEvent (WORD message) {
 			ShowWindow(l_window, SW_SHOW);
 			break;
 		}
-		case TN_MENU_MOVE: {
-			GetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, TN_MENU_MOVE), false, &i_mi);
+		case TN_MENU_MOVE:
+		case TN_MENU_INIT: {
+			GetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, message), false, &i_mi);
 			i_mi.fState ^= MFS_CHECKED;
-			SetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, TN_MENU_MOVE), false, &i_mi);
+			SetMenuItemInfo(i_menu, MAKELONG(ID_BUTTON_ICON, message), false, &i_mi);
 			changed = ((i_mi.fState & MFS_CHECKED) == MFS_CHECKED) ? BST_CHECKED : BST_UNCHECKED;
-			Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_MOVE), changed);
-			changed ? Hook_MoveCallbackAttach() : Hook_MoveCallbackDetach();
-			RegSetValueEx(m_regkey, L"MoveActive", 0, REG_BINARY, (BYTE*)&changed, sizeof(BYTE));
+			switch (message) {
+				case TN_MENU_MOVE:
+					Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_MOVE), changed);
+					changed ? Hook_MoveCallbackAttach() : Hook_MoveCallbackDetach();
+					RegSetValueEx(m_regkey, L"MoveActive", 0, REG_BINARY, (BYTE*)&changed, sizeof(BYTE));
+					break;
+				case TN_MENU_INIT:
+					SetStartup(changed);
+					break;
+			}
 			break;
 		}
 	}
@@ -73,6 +100,7 @@ void Icon_MakeMenu () {
 	i_menu = CreatePopupMenu();
 	
 	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_MOVE, L"Move Active");
+	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_INIT, L"Add Startup");
 	AppendMenuSeparator(i_menu);
 	AppendMenuString(i_menu, MF_UNCHECKED, TN_MENU_LOG, L"Log");
 	AppendMenuSeparator(i_menu);

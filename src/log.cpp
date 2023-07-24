@@ -58,7 +58,7 @@ void Log_CreateWindow (HWND main) {
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
 	wc.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 
-	Util_CheckError(reinterpret_cast<void*>(MAKELONG(RegisterClassEx(&wc), 0)));
+	Util_CheckError((void*)MAKELONG(RegisterClassEx(&wc), 0));
 	
 	//Create Log Window
 	l_window = CreateWindowEx(WS_EX_TOPMOST, WINDOW_LOG_NAME, WINDOW_LOG_CAPTION,

@@ -14,6 +14,6 @@ rem Resource Compile
 windres resource.rc -O coff ../bin/resource.res -I ../Include
 
 rem Executable Compile
-x86_64-w64-mingw32-g++ -I../include %FILES% -o ../bin/WindowProperty.exe ../bin/resource.res -mwindows
+x86_64-w64-mingw32-g++ -I../include %FILES% -o ../bin/WindowProperty.exe ../bin/resource.res -mwindows -Wno-int-to-pointer-cast
 
 pause
