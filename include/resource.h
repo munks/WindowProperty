@@ -21,6 +21,7 @@
 #define ID_BUTTON_SETTING		114
 
 #define TN_MENU_MOVE			0
+#define TN_MENU_INIT			1
 #define TN_MENU_CLOSE			3
 #define TN_MENU_LOG				4
 

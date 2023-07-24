@@ -62,7 +62,7 @@ HWND Control_CreateButton (HWND hwnd, LPCWSTR caption, LPCWSTR tooltip, bool che
 							WS_BORDER | WS_CHILD | WS_VISIBLE | WS_TABSTOP |
 							BS_CENTER | BS_VCENTER | (BS_AUTOCHECKBOX * checkbox),
 							x, y, w, h,
-							hwnd, reinterpret_cast<HMENU>(idtf), m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, NULL);
 	Util_CheckError(tmphwnd);
 	
 	#ifdef _DEBUG
@@ -84,7 +84,7 @@ HWND Control_CreateEdit (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h,
 	tmphwnd = CreateWindow(L"EDIT", NULL,
 							WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER,
 							x, y, w, h,
-							hwnd, reinterpret_cast<HMENU>(idtf), m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, NULL);
 	Util_CheckError(tmphwnd);
 	
 	#ifdef _DEBUG
@@ -107,7 +107,7 @@ HWND Control_CreateStatic (HWND hwnd, int x, int y, int w, int h, int idtf, LPCW
 	tmphwnd = CreateWindow(L"STATIC", NULL,
 							WS_BORDER | WS_CHILD | WS_VISIBLE | SS_CENTER,
 							x, y, w, h,
-							hwnd, reinterpret_cast<HMENU>(idtf), m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, NULL);
 	Util_CheckError(tmphwnd);
 	
 	#ifdef _DEBUG
@@ -128,7 +128,7 @@ void Control_CreateListView (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, in
 							LVS_REPORT | LVS_SINGLESEL | LVS_NOSORTHEADER | LVS_SHOWSELALWAYS |
 							WS_CHILD | WS_VISIBLE | WS_BORDER,
 							x, y, w, h,
-							hwnd, reinterpret_cast<HMENU>(idtf), m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, NULL);
 	Util_CheckError(c_listView);
 	
 	#ifdef _DEBUG

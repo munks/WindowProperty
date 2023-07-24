@@ -37,7 +37,7 @@ LRESULT CALLBACK InputProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 				}
 				DialogEvent(ID_EDIT_INPUT) {
 					if (EventMessage() == EN_UPDATE) {
-						tmphwnd = reinterpret_cast<HWND>(lParam);
+						tmphwnd = (HWND)lParam;
 						
 						if (Edit_GetTextLength(tmphwnd) > MAX_PATH) {
 							Edit_GetText(tmphwnd, p_caption, MAX_PATH);
