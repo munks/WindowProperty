@@ -54,6 +54,38 @@ LRESULT CALLBACK InputProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	return 0;
 }
 
+int CheckAbsolutePath (const wchar_t* name) {
+	wchar_t checker[MAX_PATH];
+	
+	GetModuleFileName(NULL, checker, MAX_PATH);
+	wcscpy(wcsrchr(checker, L'\\') + 1, name);
+	
+	if (_waccess(checker, 0)) {
+		Log_Message(L"명령줄 인수를 받아오는 프로그램이 없습니다. (%ls)", name);
+		return 1;
+	}
+	
+	return 0;
+}
+
+void ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pid) {
+	wchar_t mainpath[MAX_PATH];
+	wchar_t exepath[MAX_PATH];
+	wchar_t params[MAX_PATH];
+	
+	GetModuleFileName(NULL, mainpath, MAX_PATH);
+	*(wcsrchr(mainpath, L'\\') + 1) = L'\0';
+	
+	swprintf(exepath, L"%ls%ls", mainpath, exe);
+	swprintf(params, L"%d \"%ls%ls\"", pid, mainpath, dll);
+	
+	#ifdef _DEBUG
+	wprintf(L"ShellExecute: %ls %ls\n", exepath, params);
+	#endif
+	
+	ShellExecute(main, L"open", exepath, params, NULL, 0);
+}
+
 //External
 
 void Process_WindowTopmostStateChange (HWND hwnd, HWND main, LPCWSTR name) {
@@ -153,7 +185,6 @@ void Process_CommandLine (HWND hwnd, HWND main, LPCWSTR name) {
 	wchar_t exe[22];
 	wchar_t dll[18];
 	
-	
 	pid = Util_GetProcessID(hwnd);
 	
 	handle = OpenProcess(PROCESS_ALL_ACCESS, false, pid);
@@ -163,19 +194,10 @@ void Process_CommandLine (HWND hwnd, HWND main, LPCWSTR name) {
 	wcscpy(exe, !iswow64 ? L"dllinjector_x64.exe" : L"dllinjector_x86.exe");
 	wcscpy(dll, !iswow64 ? L"cmdline_x64.dll" : L"cmdline_x86.dll");
 	
-	swprintf(param, L"%d %ls", pid, dll);
+	if (CheckAbsolutePath(exe)) { return; }
+	if (CheckAbsolutePath(dll)) { return; }
 	
-	if (_waccess(exe, 0)) {
-		Log_Message(L"명령줄 인수를 받아오는 프로그램이 없습니다. (%ls)", exe);
-		return;
-	}
-	
-	if (_waccess(dll, 0)) {
-		Log_Message(L"명령줄 인수를 받아오는 프로그램이 없습니다. (%ls)", dll);
-		return;
-	}
-		
-	ShellExecute(main, L"open", exe, param, NULL, 0);
+	ExecuteFromAbsolutePath(main, exe, dll, pid);
 	
 	Log_Message(L"프로세스의 명령줄 인수를 받아왔습니다. (%s)", name);
 }
