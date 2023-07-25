@@ -2,19 +2,22 @@
 #include <wchar.h>
 #include <windows.h>
 
-void AttachDLL (HANDLE process, const wchar_t* dll, int dlllen) {
+void AttachDLL (HANDLE process, const wchar_t* dll) {
 	LPVOID alloc;
 	HMODULE gmh;
 	HANDLE thread;
+	int len;
+	
+	len = wcslen(dll) + 1;
 	
 	//Allocate/Write Memory
-	alloc = VirtualAllocEx(process, NULL, sizeof(wchar_t) * dlllen, MEM_COMMIT, PAGE_READWRITE);
+	alloc = VirtualAllocEx(process, NULL, sizeof(wchar_t) * len, MEM_COMMIT, PAGE_READWRITE);
 	if (!alloc) {
 		puts("VirtualAllocEx Error");
 		return;
 	}
 	
-	WriteProcessMemory(process, alloc, (void*)dll, sizeof(wchar_t) * dlllen, NULL);
+	WriteProcessMemory(process, alloc, (void*)dll, sizeof(wchar_t) * len, NULL);
 	
 	//Run Thread
 	thread = CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)LoadLibraryW, alloc, 0, NULL);
@@ -27,14 +30,12 @@ void AttachDLL (HANDLE process, const wchar_t* dll, int dlllen) {
 	
 	CloseHandle(thread);
 	THREADCLOSE:
-	VirtualFreeEx(process, alloc, sizeof(wchar_t) * dlllen, MEM_DECOMMIT);
+	VirtualFreeEx(process, alloc, sizeof(wchar_t) * len, MEM_DECOMMIT);
 	return;
 }
 
 void ProcessCommandLine (ULONG pid, const wchar_t* dll) {
 	HANDLE process;
-	wchar_t path[260];
-	int pathlen;
 	FILE* file;
 	
 	//OpenProcess
@@ -45,22 +46,14 @@ void ProcessCommandLine (ULONG pid, const wchar_t* dll) {
 	}
 	
 	//DLL Check
-	GetModuleFileName(NULL, path, 260);
-	*(wcsrchr(path, L'\\') + 1) = L'\0';
-	wcscat(path, dll);
-	pathlen = wcslen(path) + 1;
-	
-	if (pathlen > 260) {
-		goto FREEPROC;
-	}
-	
-	file = _wfopen(path, L"r");
+	file = _wfopen(dll, L"r");
 	if (!file) {
 		goto FREEPROC;
 	}
 	fclose(file);
 	
-	AttachDLL(process, path, pathlen);
+	//Attach DLL
+	AttachDLL(process, dll);
 	
 	FREEPROC:
 	CloseHandle(process);
