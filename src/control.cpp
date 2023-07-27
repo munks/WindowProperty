@@ -14,12 +14,15 @@ int c_listViewIndex;
 
 LVINFO c_listViewInfo[LV_MAX_COL] = {
 	{L"Process Name", 0.29},
-	{L"Process Title", 0.46},
+	{L"Process Title", 0.42},
 	{L"PID", 0.1},
 	{L"HWND", 0.15}
 };
 
 //Internal
+
+#define SetButtonText(b, c, i) \
+		Button_SetText(b, (c) ? BUTTON_##i##_CAPTION : BUTTON_##i##_CAPTION_2)
 
 void CreateTooltip (HWND hwnd, HWND hitem, LPCWSTR tooltip) {
 	HWND tmphwnd;
@@ -157,10 +160,12 @@ void Control_RefreshListView () {
 	wchar_t outputText[MAX_PATH];
 	LVITEM item;
 	HICON icon;
+	int idx;
 	
 	IL_Destroy(c_imageList);
 	c_imageList = IL_Create(16, 16, ILC_MASK | ILC_COLOR32, 1, 1);
-
+	idx = ListView_GetTopIndex(c_listView);
+	
 	//Clear List
 	ListView_DeleteAllItems(c_listView);
 	ZeroMemory(&item, sizeof(item));
@@ -220,12 +225,23 @@ void Control_RefreshListView () {
 	
 	ListView_SetItemState(c_listView, c_listViewIndex, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
 	ListView_SetImageList(c_listView, c_imageList, LVSIL_SMALL);
+	SetFocus(c_listView);
+	ListView_Scroll(c_listView, 0, 17 * idx);
 }
 
-void Control_SetChangeText(HWND hwnd, HWND topmost, HWND caption) {
+void Control_SetChangeText (HWND hwnd, HWND topmost, HWND caption, HWND show, HWND capture) {
+	DWORD wda;
+	
 	//TopMost
-	Button_SetText(topmost, IsTopMost(hwnd) ? BUTTON_CHANGE_CAPTION_2 : BUTTON_CHANGE_CAPTION);
+	SetButtonText(topmost, IsTopMost(hwnd), CHANGE);
 	
 	//Caption
-	Button_SetText(caption, HasCaption(hwnd) ? BUTTON_CAPTION_CAPTION : BUTTON_CAPTION_CAPTION_2);
+	SetButtonText(caption, HasCaption(hwnd), CAPTION);
+	
+	//Show
+	SetButtonText(show, IsWindowVisible(hwnd), SHOW);
+	
+	//Capture
+	GetWindowDisplayAffinity(hwnd, &wda);
+	SetButtonText(capture, wda, CAPTURE);
 }

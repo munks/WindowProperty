@@ -26,8 +26,10 @@ bool Util_IsWindowShown (HWND hwnd) {
 	int style = GetWindowStyle(hwnd);
 	int exstyle = GetWindowExStyle(hwnd);
 
-	if (!(style & WS_VISIBLE)) {
-		return false;
+	if (!Button_GetCheck(m_allButton)) {
+		if (!(style & WS_VISIBLE)) {
+			return false;
+		}
 	}
 	if (exstyle & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)) {
 		return false;

@@ -9,8 +9,8 @@
 #define WINDOW_LOG_CAPTION			L"Log"
 
 //ID_BUTTON_CHANGE
-#define BUTTON_CHANGE_CAPTION		L"TopMost"
-#define BUTTON_CHANGE_CAPTION_2		L"No TopMost"
+#define BUTTON_CHANGE_CAPTION		L"No TopMost"
+#define BUTTON_CHANGE_CAPTION_2		L"TopMost"
 #define BUTTON_CHANGE_TOOLTIP		L"Pin/Unpin The Window To The Top"
 
 //ID_BUTTON_NAME
@@ -49,6 +49,20 @@
 //ID_BUTTON_OPEN
 #define BUTTON_OPEN_CAPTION			L"Open Folder"
 #define BUTTON_OPEN_TOOLTIP			L"Open Execute File Directory"
+
+//ID_BUTTON_CAPTURE
+#define BUTTON_CAPTURE_CAPTION		L"Include Capture"
+#define BUTTON_CAPTURE_CAPTION_2	L"Exclude Capture"
+#define BUTTON_CAPTURE_TOOLTIP		L"Include/Exclude From Capture Screen"
+
+//ID_BUTTON_SHOW
+#define BUTTON_SHOW_CAPTION			L"Hide Window"
+#define BUTTON_SHOW_CAPTION_2		L"Show Window"
+#define BUTTON_SHOW_TOOLTIP			L"Setting Visible/Invisible Window"
+
+//ID_BUTTON_ALL
+#define BUTTON_ALL_CAPTION			L"Show All"
+#define BUTTON_ALL_TOOLTIP			L"Show Hidden Windows"
 
 //ID_LIST
 #define LIST_TOOLTIP				L"List Of Processes"

@@ -1,7 +1,9 @@
 #include <wchar.h>
 #include <windows.h>
 
-static DWORD WINAPI ThreadProc (LPVOID lparam) {
+typedef long long HWND_T;
+
+void CommandLine () {
 	HGLOBAL cbm;
 	LPVOID glm;
 	
@@ -22,14 +24,40 @@ static DWORD WINAPI ThreadProc (LPVOID lparam) {
 	
 	END:
 	MessageBoxW(NULL, GetCommandLineW(), L"Command Line", MB_OK | MB_TOPMOST | MB_SETFOREGROUND);
-	FreeLibraryAndExitThread((HMODULE)lparam, 0);
+}
+
+void CaptureAffinity (BOOL on) {
+	DWORD size;
+	HWND_T hwnd;
+	
+	size = sizeof(HWND_T);
+	RegGetValueW(HKEY_CURRENT_USER, L"SOFTWARE\\Duality\\WindowProperty", L"LastHookHWND", RRF_RT_REG_QWORD, NULL, (LPVOID)&hwnd, &size);
+	
+	SetWindowDisplayAffinity((HWND)hwnd, on ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
+}
+
+DWORD WINAPI TypeCheck (LPVOID lParam) {
+	DWORD size;
+	BYTE val;
+	
+	size = sizeof(BYTE);
+	RegGetValueW(HKEY_CURRENT_USER, L"SOFTWARE\\Duality\\WindowProperty", L"LastHook", RRF_RT_REG_BINARY, NULL, &val, &size);
+	
+	if (val & 0x1) {
+		CaptureAffinity(val & 0x2);
+	} else {
+		CommandLine();
+	}
+	
+	FreeLibraryAndExitThread((HMODULE)lParam, 0);
 	return 0;
 }
+
 
 BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 	switch (fdwReason) {
 		case DLL_PROCESS_ATTACH: {
-			CreateThread(NULL, 0, ThreadProc, (void*)hinstDLL, 0, NULL);
+			CreateThread(NULL, 0, TypeCheck, (void*)hinstDLL, 0, NULL);
 			break;
 		}
 		case DLL_THREAD_ATTACH: break;

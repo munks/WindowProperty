@@ -5,7 +5,10 @@
 HWND m_main;
 HWND m_changeButton;
 HWND m_captionButton;
+HWND m_showButton;
+HWND m_capButton;
 HWND m_moveButton;
+HWND m_allButton;
 
 HINSTANCE m_hInstance;
 HFONT m_font;
@@ -55,7 +58,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 					tmphwnd = (HWND)_wtoi(pidhwnd);
 					changed = GetLayeredWindowAttributes(tmphwnd, NULL, &alpha, NULL);
 					
-					Control_SetChangeText(tmphwnd, m_changeButton, m_captionButton);
+					Control_SetChangeText(tmphwnd, m_changeButton, m_captionButton, m_showButton, m_capButton);
 					swprintf(text, L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
 					SetDlgItemText(hwnd, ID_EDIT_ALPHA, text);
 				}
@@ -89,6 +92,8 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 				DialogEvent(ID_BUTTON_CHANGE)
 				DialogEvent(ID_BUTTON_CMD)
 				DialogEvent(ID_BUTTON_OPEN)
+				DialogEvent(ID_BUTTON_SHOW)
+				DialogEvent(ID_BUTTON_CAPTURE)
 				DialogEvent(ID_BUTTON_OPACITY) {
 					if (EventMessage() == BN_CLICKED) {
 						//Change Window Priority
@@ -108,9 +113,12 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 							case ID_BUTTON_PIP:
 								executionFunc = Process_WindowPIPChange; break;
 							case ID_BUTTON_CMD:
-								executionFunc = Process_CommandLine; break;
+							case ID_BUTTON_CAPTURE:
+								executionFunc = Process_WindowsDLLHook; break;
 							case ID_BUTTON_OPEN:
 								executionFunc = Process_OpenDirectory; break;
+							case ID_BUTTON_SHOW:
+								executionFunc = Process_ShowHideWindow; break;
 						}
 						
 						ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 0, name, 30);
@@ -119,7 +127,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 						//Selected Process Execution
 						ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
 						if (IsWindow((HWND)_wtoi(pidhwnd))) {
-							executionFunc((HWND)_wtoi(pidhwnd), hwnd, name);
+							executionFunc((HWND)_wtoi(pidhwnd), (HWND)lParam, name);
 						} else {
 							Log_Message(L"윈도우를 찾을 수 없습니다. (HWND: %u)", (HWND)_wtoi(pidhwnd), name);
 						}
@@ -135,6 +143,12 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 						changed ? Hook_MoveCallbackAttach() : Hook_MoveCallbackDetach();
 						Icon_SetIconState(TN_MENU_MOVE, changed);
 						RegSetValueEx(m_regkey, L"MoveActive", 0, REG_BINARY, (BYTE*)&changed, sizeof(BYTE));
+					}
+					break;
+				}
+				DialogEvent(ID_BUTTON_ALL) {
+					if (EventMessage() == BN_CLICKED) {
+						Control_RefreshListView();
 					}
 					break;
 				}
@@ -242,48 +256,57 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	//Create Main Window
 	m_main = CreateWindowEx(WS_EX_TOPMOST, WINDOW_MAIN_NAME, WINDOW_MAIN_CAPTION,
 							WS_POPUP | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-							CW_USEDEFAULT, CW_USEDEFAULT, 600, 450,
+							CW_USEDEFAULT, CW_USEDEFAULT, 600, 500,
 							NULL, NULL, hInstance, NULL);
 	Util_CheckError(m_main);
 	
 	//Create Log Window
 	Log_CreateWindow(m_main);
 
-	//Create Button(CHANGE)
-	m_changeButton = Control_CreateButton(m_main, BUTTON_CHANGE_CAPTION, BUTTON_CHANGE_TOOLTIP, false, 475, 20, 100, 30, ID_BUTTON_CHANGE);
+	//Create Button (CHANGE)
+	m_changeButton = Control_CreateButton(m_main, BUTTON_CHANGE_CAPTION, BUTTON_CHANGE_TOOLTIP, false, 475, 10, 100, 30, ID_BUTTON_CHANGE);
 	
-	//Create Button(NAME)
-	Control_CreateButton(m_main, BUTTON_NAME_CAPTION, BUTTON_NAME_TOOLTIP, false, 475, 60, 100, 30, ID_BUTTON_NAME);
+	//Create Button (NAME)
+	Control_CreateButton(m_main, BUTTON_NAME_CAPTION, BUTTON_NAME_TOOLTIP, false, 475, 50, 100, 30, ID_BUTTON_NAME);
 	
-	//Create Button(OPACITY)
-	Control_CreateButton(m_main, BUTTON_OPACITY_CAPTION, BUTTON_OPACITY_TOOLTIP, false, 475, 100, 100, 30, ID_BUTTON_OPACITY);
+	//Create Button (OPACITY)
+	Control_CreateButton(m_main, BUTTON_OPACITY_CAPTION, BUTTON_OPACITY_TOOLTIP, false, 475, 90, 100, 30, ID_BUTTON_OPACITY);
 	
-	//Create Edit(OPACITY-ALPHA)
-	Control_CreateEdit(m_main, BUTTON_OPACITY_TOOLTIP, 475, 135, 27, 20, ID_EDIT_ALPHA, L"100");
+	//Create Edit (OPACITY-ALPHA)
+	Control_CreateEdit(m_main, BUTTON_OPACITY_TOOLTIP, 475, 125, 27, 20, ID_EDIT_ALPHA, L"100");
 	
-	//Create Static(OPACITY-PERCENTAGE)
-	Control_CreateStatic(m_main, 510, 135, 16, 20, ID_STATIC_PERCENTAGE, L"%");
+	//Create Static (OPACITY-PERCENTAGE)
+	Control_CreateStatic(m_main, 510, 125, 16, 20, ID_STATIC_PERCENTAGE, L"%");
 	
-	//Create Button(FULL SCREEN)
-	Control_CreateButton(m_main, BUTTON_SCREEN_CAPTION, BUTTON_SCREEN_TOOLTIP, false, 475, 160, 100, 30, ID_BUTTON_SCREEN);
+	//Create Button (FULL SCREEN)
+	Control_CreateButton(m_main, BUTTON_SCREEN_CAPTION, BUTTON_SCREEN_TOOLTIP, false, 475, 150, 100, 30, ID_BUTTON_SCREEN);
 	
-	//Create Button(CAPTION)
-	m_captionButton = Control_CreateButton(m_main, BUTTON_CAPTION_CAPTION, BUTTON_CAPTION_TOOLTIP, false, 475, 200, 100, 30, ID_BUTTON_CAPTION);
+	//Create Button (CAPTION)
+	m_captionButton = Control_CreateButton(m_main, BUTTON_CAPTION_CAPTION, BUTTON_CAPTION_TOOLTIP, false, 475, 190, 100, 30, ID_BUTTON_CAPTION);
 	
-	//Create Button(Command Line)
-	Control_CreateButton(m_main, BUTTON_CMD_CAPTION, BUTTON_CMD_TOOLTIP, false, 475, 240, 100, 30, ID_BUTTON_CMD);
+	//Create Button (Command Line)
+	Control_CreateButton(m_main, BUTTON_CMD_CAPTION, BUTTON_CMD_TOOLTIP, false, 475, 230, 100, 30, ID_BUTTON_CMD);
 	
-	//Create Button(Open)
-	Control_CreateButton(m_main, BUTTON_OPEN_CAPTION, BUTTON_OPEN_TOOLTIP, false, 475, 280, 100, 30, ID_BUTTON_OPEN);
+	//Create Button (Open)
+	Control_CreateButton(m_main, BUTTON_OPEN_CAPTION, BUTTON_OPEN_TOOLTIP, false, 475, 270, 100, 30, ID_BUTTON_OPEN);
 	
-	//Create Button(PIP Mode)
-	//Control_CreateButton(m_main, BUTTON_PIP_CAPTION, BUTTON_PIP_TOOLTIP, false, 475, 320, 100, 30, ID_BUTTON_PIP);
+	//Create Button (PIP Mode)
+	//Control_CreateButton(m_main, BUTTON_PIP_CAPTION, BUTTON_PIP_TOOLTIP, false, 475, 310, 100, 30, ID_BUTTON_PIP);
 	
-	//Create Button(MOVE)
-	m_moveButton = Control_CreateButton(m_main, BUTTON_MOVE_CAPTION, BUTTON_MOVE_TOOLTIP, true, 475, 360, 100, 30, ID_BUTTON_MOVE);
+	//Create Button (SHOW)
+	m_showButton = Control_CreateButton(m_main, BUTTON_SHOW_CAPTION, BUTTON_SHOW_TOOLTIP, false, 475, 310, 100, 30, ID_BUTTON_SHOW);
+	
+	//Create Button (CAPTURE)
+	m_capButton = Control_CreateButton(m_main, BUTTON_CAPTURE_CAPTION, BUTTON_CAPTURE_TOOLTIP, false, 475, 350, 100, 30, ID_BUTTON_CAPTURE);
+	
+	//Create Button (ALL)
+	m_allButton = Control_CreateButton(m_main, BUTTON_ALL_CAPTION, BUTTON_ALL_TOOLTIP, true, 475, 390, 100, 30, ID_BUTTON_ALL);
+	
+	//Create Button (MOVE)
+	m_moveButton = Control_CreateButton(m_main, BUTTON_MOVE_CAPTION, BUTTON_MOVE_TOOLTIP, true, 475, 430, 100, 30, ID_BUTTON_MOVE);
 	
 	//Create List-View
-	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 390, ID_LIST);
+	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 440, ID_LIST);
 	Control_RefreshListView();
 	
 	//Add System Tray Notify Icon
