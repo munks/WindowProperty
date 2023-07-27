@@ -18,7 +18,9 @@
 #define ID_BUTTON_MOVE			111
 #define ID_BUTTON_INPUT			112 //Change Name
 #define ID_BUTTON_CANCEL		113 //Change Name
-#define ID_BUTTON_SETTING		114
+#define ID_BUTTON_ALL			114
+#define ID_BUTTON_SHOW			115
+#define ID_BUTTON_CAPTURE		116
 
 #define TN_MENU_MOVE			0
 #define TN_MENU_INIT			1
