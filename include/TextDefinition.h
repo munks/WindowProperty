@@ -24,7 +24,7 @@
 //ID_BUTTON_CAPTION
 #define BUTTON_CAPTION_CAPTION		L"Remove Caption"
 #define BUTTON_CAPTION_CAPTION_2	L"Add Caption"
-#define BUTTON_CAPTION_TOOLTIP		L"Add/Remove Caption (Possible Problems)"
+#define BUTTON_CAPTION_TOOLTIP		L"Add/Remove Caption (Not Applicable To All Windows)"
 
 //ID_BUTTON_PIP
 #define BUTTON_PIP_CAPTION			L"PIP Mode"
@@ -53,12 +53,12 @@
 //ID_BUTTON_CAPTURE
 #define BUTTON_CAPTURE_CAPTION		L"Include Capture"
 #define BUTTON_CAPTURE_CAPTION_2	L"Exclude Capture"
-#define BUTTON_CAPTURE_TOOLTIP		L"Include/Exclude From Capture Screen"
+#define BUTTON_CAPTURE_TOOLTIP		L"Include/Exclude Window From Capture Screen"
 
 //ID_BUTTON_SHOW
 #define BUTTON_SHOW_CAPTION			L"Hide Window"
 #define BUTTON_SHOW_CAPTION_2		L"Show Window"
-#define BUTTON_SHOW_TOOLTIP			L"Setting Visible/Invisible Window"
+#define BUTTON_SHOW_TOOLTIP			L"Set Window to Visible/Invisible"
 
 //ID_BUTTON_ALL
 #define BUTTON_ALL_CAPTION			L"Show All"
