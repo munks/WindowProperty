@@ -71,7 +71,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 			}
 		}
 		WindowEvent(WM_SETFOCUS)
-		WindowEvent(WM_SHOWWINDOW) {
+		WindowEvent(WM_MOUSEACTIVATE) {
 			Control_RefreshListView();
 			break;
 		}

@@ -37,3 +37,7 @@ Check Box
 - Set window to visible/invisible.
 ### Include/Exclude Capture
 - Include/Exclude window from capture screen. (dllinjector needed)
+
+## Caution
+
+dllinjector used datamining techniques. We are not responsible for any legal issues.
