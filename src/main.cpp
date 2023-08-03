@@ -32,6 +32,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	BYTE alpha;
 	int value;
 	BOOL changed;
+	POINT cursor;
 	
 	#ifdef _DEBUG
 	Debug_ConvertWindowMessage(uMsg);
@@ -97,7 +98,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 				DialogEvent(ID_BUTTON_OPACITY) {
 					if (EventMessage() == BN_CLICKED) {
 						//Change Window Priority
-						void (*executionFunc)(HWND, HWND, const wchar_t*);
+						void (*executionFunc)(HWND, HWND, LPCWSTR);
 						
 						switch (EventDialog()) {
 							case ID_BUTTON_CHANGE:
@@ -184,8 +185,6 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 				ShowWindow(m_main, SW_RESTORE);
 			}
 			if (lParam == WM_RBUTTONUP) {
-				POINT cursor;
-				
 				GetCursorPos(&cursor);
 				SetForegroundWindow(hwnd);
 				TrackPopupMenu(Icon_GetMenu(), TPM_LEFTALIGN | TPM_RIGHTBUTTON, cursor.x, cursor.y, 0, hwnd, NULL);
@@ -205,7 +204,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		}
 		//Hide Window Instead Of Closing
 		WindowEvent(WM_CLOSE) {
-			ShowWindow(hwnd, SW_HIDE);
+			AnimateWindow(hwnd, 200, AW_HIDE | AW_BLEND);
 			return 0;
 		}
 		//Not Used
