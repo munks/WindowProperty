@@ -17,6 +17,7 @@ HKEY m_regkey;
 //Function
 
 void Main_Close () {
+	DestroyMenu(i_menu);
 	DeleteObject(m_font);
 	RegCloseKey(m_regkey);
 	Icon_RemoveNotifyIcon();
@@ -71,8 +72,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 				break;
 			}
 		}
-		WindowEvent(WM_SETFOCUS)
-		WindowEvent(WM_MOUSEACTIVATE) {
+		WindowEvent(WM_SETFOCUS) {
 			Control_RefreshListView();
 			break;
 		}
@@ -97,7 +97,7 @@ LRESULT CALLBACK WindowProcMain (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 				DialogEvent(ID_BUTTON_CAPTURE)
 				DialogEvent(ID_BUTTON_OPACITY) {
 					if (EventMessage() == BN_CLICKED) {
-						//Change Window Priority
+						//Change Window Property
 						void (*executionFunc)(HWND, HWND, LPCWSTR);
 						
 						switch (EventDialog()) {
@@ -333,10 +333,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	//Message Loop
 	MSG msg = {};
 	while (GetMessage(&msg, NULL, 0, 0) > 0) {
-		if(!IsDialogMessage(m_main, &msg)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 	return 0;
 }
