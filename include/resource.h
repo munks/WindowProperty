@@ -1,4 +1,10 @@
-#include "TextDefinition.h"
+#ifndef LANG
+	#include "TextDefinition.h"
+#elif LANG == KOKR
+	#include "TextDefinition_koKR.h"
+#else
+	#include "TextDefinition.h"
+#endif
 
 #define ID_MAIN					1
 #define ID_ICON					2	//Icon

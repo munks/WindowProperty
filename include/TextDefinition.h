@@ -43,7 +43,7 @@
 //ID_BUTTON_CAPTURE
 #define BUTTON_CAPTURE_CAPTION		L"Include Capture"
 #define BUTTON_CAPTURE_CAPTION_2	L"Exclude Capture"
-#define BUTTON_CAPTURE_TOOLTIP		L"Include/Exclude Window From Capture Screen"
+#define BUTTON_CAPTURE_TOOLTIP		L"Include/Exclude Window From Capture Screen (dllinjector Needed)"
 
 //ID_BUTTON_HOTKEY
 #define BUTTON_HOTKEY_CAPTION		L"Change Hotkey"
@@ -59,3 +59,40 @@
 
 //ID_LIST
 #define LIST_TOOLTIP				L"List Of Processes"
+
+//Change
+#define CHANGE_TEXT					L"Change"
+
+//Notify
+#define NOTIFY_HOTKEY				L"Hotkey Pressed"
+#define NOTIFY_MOVE_ACTIVE			L"Window Move Active"
+#define NOTIFY_MOVE_DEACTIVE		L"Window Move Deactive"
+#define NOTIFY_CLIP_ACTIVE			L"Clip Cursor Active"
+#define NOTIFY_CLIP_DEACTIVE		L"Clip Cursor Deactive"
+#define NOTIFY_CLIP_FAILED			L"Clip Cursor Failed"
+
+//Menu
+#define MENU_MOVE_TEXT				L"Move Active"
+#define MENU_MOVE_TEXT_FORMAT		L"Move Active (%ls)"
+#define MENU_CLIP_TEXT				L"Clip Cursor"
+#define MENU_CLIP_TEXT_FORMAT		L"Clip Cursor (%ls)"
+#define MENU_START_TEXT				L"Add Startup"
+#define MENU_LOG_TEXT				L"Log"
+#define MENU_CLOSE_TEXT				L"Close"
+
+//Link
+#define LINK_STYLE					L"https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles"
+#define LINK_EXSTYLE				L"https://learn.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles"
+
+//Log
+#define LOG_NO_PROGRAM				L"Could Not Found External Program. (%ls)"
+#define LOG_SET_PROP				L"Set Window Properties. (%ls)"
+#define LOG_CHANGE_CAPTION			L"Changed Window Caption. (%ls)"
+#define LOG_SET_OPACITY				L"Set Window Opacity To %d%%. (%ls)"
+#define LOG_CHANGE_SCREEN			L"Changed Window To %ls. (%ls)"
+#define LOG_CHANGE_SCREEN_WINDOW	L"Windowed Mode"
+#define LOG_CHANGE_SCREEN_FULL		L"Full Screen"
+#define LOG_GET_COMMAND				L"Got Program's Command Line. (%ls)"
+#define LOG_CHANGE_CAPTURE			L"Set Window Capture Status To %ls. (%ls)"
+#define LOG_SE_FAILED				L"Failed To Run Program. (%ls)"
+#define LOG_OPEN_DIRECTORY			L"Opened Program's Directory Folder. (%ls)"

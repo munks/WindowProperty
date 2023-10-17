@@ -5,9 +5,6 @@
 wchar_t p_caption[MAX_PATH];
 LONG_PTR p_currentProp[2];
 
-#define LINK_STYLE L"https://learn.microsoft.com/ko-kr/windows/win32/winmsg/window-styles"
-#define LINK_EXSTYLE L"https://learn.microsoft.com/ko-kr/windows/win32/winmsg/extended-window-styles"
-
 //Internal
 
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
@@ -244,14 +241,14 @@ int CheckAbsolutePath (const wchar_t* name) {
 	wcscpy(wcsrchr(checker, L'\\') + 1, name);
 	
 	if (_waccess(checker, 0)) {
-		Log_Message(L"명령줄 인수를 받아오는 프로그램이 없습니다. (%ls)", name);
+		Log_Message(LOG_NO_PROGRAM, name);
 		return 1;
 	}
 	
 	return 0;
 }
 
-void ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pid) {
+HINSTANCE ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pid) {
 	wchar_t mainpath[MAX_PATH];
 	wchar_t exepath[MAX_PATH];
 	wchar_t params[MAX_PATH];
@@ -266,7 +263,33 @@ void ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pid) {
 	wprintf(L"ShellExecute: %ls %ls\n", exepath, params);
 	#endif
 	
-	ShellExecute(main, L"open", exepath, params, NULL, 0);
+	return ShellExecute(main, L"open", exepath, params, NULL, 0);
+}
+
+#define IntToStr(s, i) case i: wcscpy(s, L"##i##"); break;
+
+wchar_t* FormatSEError (INT_PTR err) {
+	static wchar_t str[25];
+	
+	switch (err) {
+		IntToStr(str, ERROR_FILE_NOT_FOUND);
+		IntToStr(str, ERROR_PATH_NOT_FOUND);
+		IntToStr(str, ERROR_BAD_FORMAT);
+		IntToStr(str, SE_ERR_ACCESSDENIED);
+		IntToStr(str, SE_ERR_ASSOCINCOMPLETE);
+		IntToStr(str, SE_ERR_DDEBUSY);
+		IntToStr(str, SE_ERR_DDEFAIL);
+		IntToStr(str, SE_ERR_DDETIMEOUT);
+		IntToStr(str, SE_ERR_DLLNOTFOUND);
+		IntToStr(str, SE_ERR_NOASSOC);
+		IntToStr(str, SE_ERR_OOM);
+		IntToStr(str, SE_ERR_SHARE);
+		default:
+			swprintf(str, L"%d", err);
+			break;
+	}
+	
+	return str;
 }
 
 //External
@@ -283,7 +306,7 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 		SetWindowPos(hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
 					0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
 		
-		Log_Message(L"윈도우 설정을 변경했습니다. (%ls)", name);
+		Log_Message(LOG_SET_PROP, name);
 	}
 }
 
@@ -293,7 +316,7 @@ void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_NAME), GetAncestor(ctrl, GA_PARENT), NameProc)) {
 		SetWindowText(hwnd, p_caption);
 		
-		Log_Message(L"윈도우 제목을 변경했습니다. (%ls)", name);
+		Log_Message(LOG_CHANGE_CAPTION, name);
 	}
 }
 
@@ -310,7 +333,7 @@ void Process_WindowOpacityChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	SetLayeredWindowAttributes(hwnd, 0, alpha, LWA_ALPHA);
 	SetWindowRenew(hwnd);
 	
-	Log_Message(L"윈도우 불투명도를 %d%%로 설정했습니다. (%ls)", percent, name);
+	Log_Message(LOG_SET_OPACITY, percent, name);
 }
 
 void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -338,7 +361,7 @@ void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 		SetWindowRenew(hwnd);
 	}
 	
-	Log_Message(L"윈도우를 %ls로 설정했습니다. (%ls)", isMaximized ? L"창 모드" : L"전체 화면", name);
+	Log_Message(LOG_CHANGE_SCREEN, isMaximized ? LOG_CHANGE_SCREEN_WINDOW : LOG_CHANGE_SCREEN_FULL, name);
 }
 
 void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -350,6 +373,7 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	wchar_t dll[18];
 	BYTE val;
 	DWORD wda;
+	INT_PTR err;
 	
 	pid = Util_GetProcessID(hwnd);
 	
@@ -366,7 +390,6 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	switch (GetDlgCtrlID(ctrl)) {
 		case ID_BUTTON_CMD:
 			val = 0x0;
-			Log_Message(L"프로세스의 명령줄 인수를 받아왔습니다. (%ls)", name);
 			break;
 		case ID_BUTTON_CAPTURE:
 			val = 0x1;
@@ -375,11 +398,24 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 				val |= 0x2;
 			}
 			RegSetValueEx(m_regkey, L"LastHookHWND", 0, REG_QWORD, (BYTE*)&hwnd, sizeof(HWND));
-			Log_Message(L"윈도우의 캡쳐 가능 여부를 %ls 상태로 변경했습니다. (%ls)", wda ? L"NONE" : L"EXCLUDEFROMCAPTURE", name);
 			break;
 	}
 	RegSetValueEx(m_regkey, L"LastHook", 0, REG_BINARY, &val, sizeof(BYTE));
-	ExecuteFromAbsolutePath(GetAncestor(ctrl, GA_PARENT), exe, dll, pid);
+	err = (INT_PTR)ExecuteFromAbsolutePath(GetAncestor(ctrl, GA_PARENT), exe, dll, pid);
+	if (err > 32) {
+		switch (GetDlgCtrlID(ctrl)) {
+			case ID_BUTTON_CMD: {
+				Log_Message(LOG_GET_COMMAND, name);
+				break;
+			}
+			case ID_BUTTON_CAPTURE: {
+				Log_Message(LOG_CHANGE_CAPTURE, wda ? L"NONE" : L"EXCLUDEFROMCAPTURE", name);
+				break;
+			}
+		}
+	} else {
+		Log_Message(LOG_SE_FAILED, FormatSEError(err));
+	}
 }
 
 void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -397,5 +433,5 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	
 	ShellExecute(GetAncestor(ctrl, GA_PARENT), L"open", path, NULL, NULL, SW_SHOW);
 	
-	Log_Message(L"프로그램의 경로 폴더를 열었습니다. (%ls)", name);
+	Log_Message(LOG_OPEN_DIRECTORY, name);
 }
