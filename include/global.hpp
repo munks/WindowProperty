@@ -14,7 +14,6 @@ process.cpp - p_#Var
 //Definition
 #define UNICODE
 #undef __STRICT_ANSI__
-
 #define WM_ICONNOTIFY 0x8001
 
 //Include Standard

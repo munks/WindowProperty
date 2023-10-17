@@ -116,7 +116,7 @@ void Hook_CreateWindow (HWND main) {
 							  main, NULL, m_hInstance, NULL);
 	Util_CheckError(l_window);
 	
-	tmp = CreateWindow(L"STATIC", L"Move Active",
+	tmp = CreateWindow(L"STATIC", BUTTON_MOVE_CAPTION,
 						WS_CHILD | WS_VISIBLE | SS_CENTER,
 						5, 10, 100, 20,
 						h_window, NULL, m_hInstance, NULL);
@@ -130,7 +130,7 @@ void Hook_CreateWindow (HWND main) {
 	Util_CheckError(tmp);
 	SetWindowFont(tmp, m_font, FALSE);
 	
-	tmp = CreateWindow(L"BUTTON", L"Change",
+	tmp = CreateWindow(L"BUTTON", CHANGE_TEXT,
 						WS_BORDER | WS_CHILD | WS_VISIBLE |
 						BS_CENTER | BS_VCENTER,
 						110, 30, 50, 20,
@@ -138,7 +138,7 @@ void Hook_CreateWindow (HWND main) {
 	Util_CheckError(tmp);
 	SetWindowFont(tmp, m_font, FALSE);
 	
-	tmp = CreateWindow(L"STATIC", L"Clip Cursor",
+	tmp = CreateWindow(L"STATIC", BUTTON_CLIP_CAPTION,
 						WS_CHILD | WS_VISIBLE | SS_CENTER,
 						5, 60, 100, 20,
 						h_window, NULL, m_hInstance, NULL);
@@ -152,7 +152,7 @@ void Hook_CreateWindow (HWND main) {
 	Util_CheckError(tmp);
 	SetWindowFont(tmp, m_font, FALSE);
 	
-	tmp = CreateWindow(L"BUTTON", L"Change",
+	tmp = CreateWindow(L"BUTTON", CHANGE_TEXT,
 						WS_BORDER | WS_CHILD | WS_VISIBLE |
 						BS_CENTER | BS_VCENTER,
 						110, 80, 50, 20,
@@ -192,9 +192,9 @@ void Hook_MoveHotkeyRegister (BOOL reg) {
 	//Button/Menu Icon/Registry set
 	Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_MOVE), reg);
 	if (reg) {
-		swprintf(txt, L"Move Active (%ls)", VirtualKeyCodeText(h_moveHotkey));
+		swprintf(txt, MENU_MOVE_TEXT_FORMAT, VirtualKeyCodeText(h_moveHotkey));
 	} else {
-		wcscpy(txt, L"Move Active");
+		wcscpy(txt, MENU_MOVE_TEXT);
 	}
 	Menu_SetMenuString(TN_MENU_MOVE, txt);
 	Menu_SetMenuState(TN_MENU_MOVE, reg);
@@ -233,9 +233,9 @@ void Hook_ClipHotkeyRegister (BOOL reg) {
 	//Button/Menu Icon/Registry set
 	Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_CLIP), reg);
 	if (reg) {
-		swprintf(txt, L"Clip Cursor (%ls)", VirtualKeyCodeText(h_clipHotkey));
+		swprintf(txt, MENU_CLIP_TEXT_FORMAT, VirtualKeyCodeText(h_clipHotkey));
 	} else {
-		wcscpy(txt, L"Clip Cursor");
+		wcscpy(txt, MENU_CLIP_TEXT);
 	}
 	Menu_SetMenuString(TN_MENU_CLIP, txt);
 	Menu_SetMenuState(TN_MENU_CLIP, reg);
@@ -249,11 +249,11 @@ void Hook_ClipHotkeyRegister (BOOL reg) {
 void Hook_MouseHook () {
 	if (!h_hookMove) {
 		h_hookMove = SetWindowsHookEx(WH_MOUSE_LL, MoveHook, NULL, 0);
-		Menu_InfoNotifyIcon(L"Hotkey Pressed", L"Window Move Active", 3000);
+		Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_MOVE_ACTIVE, 3000);
 	} else {
 		UnhookWindowsHookEx(h_hookMove);
 		h_hookMove = 0;
-		Menu_InfoNotifyIcon(L"Hotkey Pressed", L"Window Move Deactive", 3000);
+		Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_MOVE_DEACTIVE, 3000);
 	}
 	
 	#ifdef _DEBUG
@@ -270,12 +270,12 @@ void Hook_ClipCursor () {
 		GetClipCursor(&h_ccRect[0]);
 		GetWindowRect(GetForegroundWindow(), &h_ccRect[1]);
 		if (ClipCursor(&h_ccRect[1])) {
-			Menu_InfoNotifyIcon(L"Hotkey Pressed", L"Clip Cursor Active", 3000);
+			Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_ACTIVE, 3000);
 		} else {
-			Menu_InfoNotifyIcon(L"Hotkey Pressed", L"Clip Cursor Failed", 3000);
+			Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_FAILED, 3000);
 		}
 	} else {
 		ClipCursor(&h_ccRect[0]);
-		Menu_InfoNotifyIcon(L"Hotkey Pressed", L"Clip Cursor Deactive", 3000);
+		Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_DEACTIVE, 3000);
 	}
 }
