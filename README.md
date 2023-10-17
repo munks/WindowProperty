@@ -15,28 +15,28 @@ Check Box
 - Show All
     - Checked: Show all windows include hidden.
 - Move Active
-    - Checked: Can drag and move anywhere in the window. (F3 key to active)
+    - Checked: Can drag and move anywhere in the window. (Hotkey(Default:F3) to active)
+- Clip Cursor
+    - Checked: Cursor bind in the window. (Hotkey(Default:F4) to active)
 
 ## Effect
 
-### TopMost/No Topmost
-- Pin/Unpin the window to the top.
+### Properties
+- Change the window's styles.
 ### Change Name
-- Change window title.
+- Change the window title.
 ### Set Opacity
-- Change window opacity. (0~100)
+- Change the window opacity. (0~100)
 ### Full Screen
-- Set window to full screen. (borderless window)
-### Remove/Add Caption
-- Add/Remove caption. (Not applicable to all windows)
+- Set the window to full screen. (borderless window)
 ### Command Line
 - Get process command line. (dllinjector needed)
-### Open Folder
-- Open executable file directory
-### Show/Hide Window
-- Set window to visible/invisible.
 ### Include/Exclude Capture
 - Include/Exclude window from capture screen. (dllinjector needed)
+### Open Folder
+- Open executable file directory
+### Change Hotkey
+- Change hotkey of Clip Cursor/Move Active.
 
 ## Caution
 
