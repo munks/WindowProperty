@@ -31,11 +31,12 @@ process.cpp - p_#Var
 //Include Custom
 #include "main.hpp"
 #include "control.hpp"
-#include "icon.hpp"
+#include "menu.hpp"
 #include "log.hpp"
 #include "util.hpp"
 #include "process.hpp"
 #include "hook.hpp"
+#include "vk.hpp"
 #include "resource.h"
 
 #ifdef _DEBUG

@@ -14,7 +14,7 @@ void AddTextToLogEdit (LPCWSTR message) {
 	Edit_ReplaceSel(l_logmsg, message);
 }
 
-LRESULT CALLBACK WindowProcLog (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK LogProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_SYSCOMMAND) {
 			if (wParam == SC_CLOSE) {
@@ -22,10 +22,6 @@ LRESULT CALLBACK WindowProcLog (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				return 0;
 			}
 			break;
-		}
-		WindowEvent(WM_DESTROY) {
-			PostQuitMessage(0);
-			return 0;
 		}
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -52,10 +48,10 @@ void Log_CreateWindow (HWND main) {
 	WNDCLASSEX wc = {};
 
 	wc.cbSize = sizeof(WNDCLASSEX);
-	wc.lpfnWndProc = WindowProcLog;
+	wc.lpfnWndProc = LogProc;
 	wc.hInstance = m_hInstance;
 	wc.lpszClassName = WINDOW_LOG_NAME;
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+	wc.hbrBackground = m_hbrush;
 	wc.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 
 	Util_CheckError((void*)MAKELONG(RegisterClassEx(&wc), 0));
@@ -72,7 +68,7 @@ void Log_CreateWindow (HWND main) {
 							WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL |
 							ES_MULTILINE | ES_READONLY,
 							10,10,370,250,
-							l_window, (HMENU)ID_LOG_MESSAGE, m_hInstance, NULL);
+							l_window, (HMENU)ID_EDIT_LOG, m_hInstance, NULL);
 	
 	SetWindowFont(l_logmsg, m_font, FALSE);
 	Util_CheckError(l_logmsg);

@@ -3,12 +3,195 @@
 //Variable
 
 wchar_t p_caption[MAX_PATH];
+LONG_PTR p_currentProp[2];
+
+#define LINK_STYLE L"https://learn.microsoft.com/ko-kr/windows/win32/winmsg/window-styles"
+#define LINK_EXSTYLE L"https://learn.microsoft.com/ko-kr/windows/win32/winmsg/extended-window-styles"
 
 //Internal
 
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
 
-LRESULT CALLBACK InputProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+bool DlgsIsChecked (HWND hwnd, int init, int id1, int id2, int id3, int id4, int id5) {
+	if (id1 != -1) {
+		if (Button_GetCheck(GetDlgItem(hwnd, init + id1)) != BST_CHECKED) {
+			return false;
+		}
+	}
+	if (id2 != -1) {
+		if (Button_GetCheck(GetDlgItem(hwnd, init + id2)) != BST_CHECKED) {
+			return false;
+		}
+	}
+	if (id3 != -1) {
+		if (Button_GetCheck(GetDlgItem(hwnd, init + id3)) != BST_CHECKED) {
+			return false;
+		}
+	}
+	if (id4 != -1) {
+		if (Button_GetCheck(GetDlgItem(hwnd, init + id4)) != BST_CHECKED) {
+			return false;
+		}
+	}
+	if (id5 != -1) {
+		if (Button_GetCheck(GetDlgItem(hwnd, init + id5)) != BST_CHECKED) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void CheckMultiStyleButton (HWND hwnd, int id, HWND ctrl) {
+	BOOL state = Button_GetCheck(ctrl);
+	
+	switch (id) {
+		case ID_BUTTON_STL_PW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 19), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 31), state);
+			break;
+		case ID_BUTTON_STL_CAPTION:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 22), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
+			break;
+		case ID_BUTTON_STL_OLW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 16), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 17), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 18), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 19), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 22), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
+			break;
+		case ID_BUTTON_EXSTL_PW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 3), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 7), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 8), state);
+			break;
+		case ID_BUTTON_EXSTL_OLW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 8), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 9), state);
+			break;
+	}
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), DlgsIsChecked(hwnd, PROP_BUTTON, 22, 23, -1, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), DlgsIsChecked(hwnd, PROP_BUTTON, 16, 17, 18, 19, 34) ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), DlgsIsChecked(hwnd, PROP_BUTTON, 19, 23, 31, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), DlgsIsChecked(hwnd, PROP_BUTTON_EX, 3, 7, 8, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), DlgsIsChecked(hwnd, PROP_BUTTON_EX, 8, 9, -1, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
+}
+LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	HWND tmphwnd;
+		
+	#ifdef _DEBUG
+	Debug_ConvertWindowMessage(uMsg);
+	#endif
+	
+	WindowEventCase(uMsg) {
+		WindowEvent(WM_INITDIALOG) {
+			//Set Style Button
+			for (int i = 0; i < 32; i++) {
+				if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
+					Button_SetCheck(tmphwnd, p_currentProp[0] & (1 << i) ? BST_CHECKED : BST_UNCHECKED);
+				}
+				if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
+					Button_SetCheck(tmphwnd, p_currentProp[1] & (1 << i) ? BST_CHECKED : BST_UNCHECKED);
+				}
+			}
+			//POPUPWINDOW
+			if (DlgsIsChecked(hwnd, PROP_BUTTON, 19, 23, 31, -1, -1)) {
+				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), BST_CHECKED);
+			}
+			//CAPTION
+			if (DlgsIsChecked(hwnd, PROP_BUTTON, 22, 23, -1, -1, -1)) {
+				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), BST_CHECKED);
+			}
+			//OVERLAPPEDWINDOW
+			if (DlgsIsChecked(hwnd, PROP_BUTTON, 16, 17, 18, 19, 34)) {
+				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), BST_CHECKED);
+			}
+			//PALETTEWINDOW (Extended)
+			if (DlgsIsChecked(hwnd, PROP_BUTTON_EX, 3, 7, 8, -1, -1)) {
+				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), BST_CHECKED);
+			}
+			//OVERLAPPEDWINDOW (Extended)
+			if (DlgsIsChecked(hwnd, PROP_BUTTON_EX, 8, 9, -1, -1, -1)) {
+				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), BST_CHECKED);
+			}
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		}
+		WindowEvent(WM_COMMAND) {
+			DialogEventCase(EventDialog()) {
+				//Confirm/Cancel
+				DialogEvent(ID_BUTTON_PROP_CONFIRM) {
+					if (EventMessage() == BN_CLICKED) {
+						p_currentProp[0] = 0;
+						p_currentProp[1] = 0;
+						
+						for (int i = 0; i < 32; i++) {
+							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
+								if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
+									p_currentProp[0] |= 1 << i;
+								}
+							}
+							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
+								if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
+									p_currentProp[1] |= 1 << i;
+								}
+							}
+						}
+						EndDialog(hwnd, 0);
+					}
+					break;
+				}
+				DialogEvent(ID_BUTTON_PROP_CANCEL) {
+					if (EventMessage() == BN_CLICKED) {
+						EndDialog(hwnd, 1);
+					}
+					break;
+				}
+				//Button On/Off (Multiple Style)
+				DialogEvent(ID_BUTTON_STL_PW)
+				DialogEvent(ID_BUTTON_STL_CAPTION)
+				DialogEvent(ID_BUTTON_STL_OLW)
+				DialogEvent(ID_BUTTON_EXSTL_PW)
+				DialogEvent(ID_BUTTON_EXSTL_OLW)
+				DialogEvent(ID_BUTTON_STL_TM)
+				DialogEvent(ID_BUTTON_STL_GM)
+				DialogEvent(ID_BUTTON_STL_TS)
+				DialogEvent(ID_BUTTON_STL_SYSMENU)
+				DialogEvent(ID_BUTTON_STL_DLGFRAME)
+				DialogEvent(ID_BUTTON_STL_BORDER)
+				DialogEvent(ID_BUTTON_STL_POPUP)
+				DialogEvent(ID_BUTTON_EXSTL_TM)
+				DialogEvent(ID_BUTTON_EXSTL_TW)
+				DialogEvent(ID_BUTTON_EXSTL_WE)
+				DialogEvent(ID_BUTTON_EXSTL_CE) {
+					if (EventMessage() == BN_CLICKED) {
+						CheckMultiStyleButton(hwnd, EventDialog(), (HWND)lParam);
+					}
+					break;
+				}
+				//Open Link (Style Description
+				DialogEvent(ID_STATIC_STYLE) {
+					if (EventMessage() == STN_CLICKED) {
+						ShellExecute(NULL, L"open", LINK_STYLE, NULL, NULL, SW_SHOWNORMAL);
+					}
+					break;
+				}
+				DialogEvent(ID_STATIC_EXSTYLE) {
+					if (EventMessage() == STN_CLICKED) {
+						ShellExecute(NULL, L"open", LINK_EXSTYLE, NULL, NULL, SW_SHOWNORMAL);
+					}
+					break;
+				}
+			}
+		}
+		return DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+	
+	return 0;
+}
+
+LRESULT CALLBACK NameProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 		
 	#ifdef _DEBUG
@@ -22,14 +205,14 @@ LRESULT CALLBACK InputProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		}
 		WindowEvent(WM_COMMAND) {
 			DialogEventCase(EventDialog()) {
-				DialogEvent(ID_BUTTON_INPUT) {
+				DialogEvent(ID_BUTTON_NAME_INPUT) {
 					if (EventMessage() == BN_CLICKED) {
 						Edit_GetText(GetDlgItem(hwnd, ID_EDIT_INPUT), p_caption, MAX_PATH);
 						EndDialog(hwnd, 0);
 					}
 					break;
 				}
-				DialogEvent(ID_BUTTON_CANCEL) {
+				DialogEvent(ID_BUTTON_NAME_CANCEL) {
 					if (EventMessage() == BN_CLICKED) {
 						EndDialog(hwnd, 1);
 					}
@@ -88,17 +271,28 @@ void ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pid) {
 
 //External
 
-void Process_WindowTopmostStateChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
-	SetWindowPos(hwnd, IsTopMost(hwnd) ? HWND_NOTOPMOST : HWND_TOPMOST,
-				0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
+	p_currentProp[0] = GetWindowLongPtr(hwnd, GWL_STYLE);
+	p_currentProp[1] = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
 	
-	Log_Message(L"윈도우를 %ls로 설정했습니다. (%ls)", IsTopMost(hwnd) ? L"TopMost" : L"NoTopMost", name);
+	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), GetAncestor(ctrl, GA_PARENT), PropProc)) {
+		//Set Window Properties
+		SetWindowLongPtr(hwnd, GWL_STYLE, p_currentProp[0]);
+		SetWindowLongPtr(hwnd, GWL_EXSTYLE, p_currentProp[1]);
+		//Set TOPMOST (It does not apply with SetWindowLongPtr)
+		SetWindowPos(hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
+					0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+		
+		Log_Message(L"윈도우 설정을 변경했습니다. (%ls)", name);
+	}
 }
 
 void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	GetWindowText(hwnd, p_caption, MAX_PATH);
-	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_INPUT), GetAncestor(ctrl, GA_PARENT), InputProc)) {
+	
+	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_NAME), GetAncestor(ctrl, GA_PARENT), NameProc)) {
 		SetWindowText(hwnd, p_caption);
+		
 		Log_Message(L"윈도우 제목을 변경했습니다. (%ls)", name);
 	}
 }
@@ -117,16 +311,6 @@ void Process_WindowOpacityChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	SetWindowRenew(hwnd);
 	
 	Log_Message(L"윈도우 불투명도를 %d%%로 설정했습니다. (%ls)", percent, name);
-}
-
-void Process_WindowCaptionDetach (HWND hwnd, HWND ctrl, LPCWSTR name) {
-	LONG hwndStyle = GetWindowStyle(hwnd);
-	
-	SetWindowLong(hwnd, GWL_STYLE,
-					(hwndStyle & WS_CAPTION) ? hwndStyle & ~WS_CAPTION : hwndStyle | WS_CAPTION);
-	SetWindowRenew(hwnd);
-	
-	Log_Message(L"제목 표시줄을 %ls했습니다. (%ls)", (hwndStyle & WS_CAPTION) ? L"제거" : L"추가", name);
 }
 
 void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -155,26 +339,6 @@ void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	}
 	
 	Log_Message(L"윈도우를 %ls로 설정했습니다. (%ls)", isMaximized ? L"창 모드" : L"전체 화면", name);
-}
-
-void Process_WindowPIPChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
-	LONG style;
-	int screenX, screenY;
-	
-	style = GetWindowStyle(hwnd);
-	screenX = GetSystemMetrics(SM_CXSCREEN);
-	screenY = GetSystemMetrics(SM_CYSCREEN);
-	
-	SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW);
-	SetWindowLong(hwnd, GWL_STYLE, (style & ~(WS_OVERLAPPEDWINDOW | WS_DLGFRAME)) | WS_POPUP);
-	
-	ShowWindow(hwnd, SW_RESTORE);
-	SetWindowPos(hwnd, HWND_TOPMOST,
-				screenX - (screenX / 20) - (screenX / 3),
-				screenY - (screenY / 20) - (screenY / 3),
-				screenX / 3, screenY / 3, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
-	
-	Log_Message(L"윈도우를 PIP 모드로 설정했습니다. (%ls)", name);
 }
 
 void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -234,10 +398,4 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	ShellExecute(GetAncestor(ctrl, GA_PARENT), L"open", path, NULL, NULL, SW_SHOW);
 	
 	Log_Message(L"프로그램의 경로 폴더를 열었습니다. (%ls)", name);
-}
-
-void Process_ShowHideWindow (HWND hwnd, HWND ctrl, LPCWSTR name) {
-	ShowWindow(hwnd, IsWindowVisible(hwnd) ? SW_HIDE : SW_SHOW);
-	
-	Log_Message(L"윈도우를 %ls 상태로 변경했습니다. (%ls)", IsWindowVisible(hwnd) ? L"표시" : L"숨김", name);
 }
