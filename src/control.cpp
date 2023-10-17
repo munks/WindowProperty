@@ -108,7 +108,7 @@ HWND Control_CreateStatic (HWND hwnd, int x, int y, int w, int h, int idtf, LPCW
 	HWND tmphwnd;
 	
 	tmphwnd = CreateWindow(L"STATIC", NULL,
-							WS_BORDER | WS_CHILD | WS_VISIBLE | SS_CENTER,
+							WS_CHILD | WS_VISIBLE | SS_CENTER,
 							x, y, w, h,
 							hwnd, (HMENU)idtf, m_hInstance, NULL);
 	Util_CheckError(tmphwnd);
@@ -229,17 +229,8 @@ void Control_RefreshListView () {
 	ListView_Scroll(c_listView, 0, 17 * idx);
 }
 
-void Control_SetChangeText (HWND hwnd, HWND topmost, HWND caption, HWND show, HWND capture) {
+void Control_SetChangeText (HWND hwnd, HWND capture) {
 	DWORD wda;
-	
-	//TopMost
-	SetButtonText(topmost, IsTopMost(hwnd), CHANGE);
-	
-	//Caption
-	SetButtonText(caption, HasCaption(hwnd), CAPTION);
-	
-	//Show
-	SetButtonText(show, IsWindowVisible(hwnd), SHOW);
 	
 	//Capture
 	GetWindowDisplayAffinity(hwnd, &wda);

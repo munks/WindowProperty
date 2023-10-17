@@ -19,7 +19,7 @@
 void Main_Close ();
 
 extern HWND m_main;
-extern HWND m_allButton;
+extern HBRUSH m_hbrush;
 extern HINSTANCE m_hInstance;
 extern HFONT m_font;
 extern HKEY m_regkey;
