@@ -6,5 +6,6 @@ ULONG Util_GetProcessID (HWND);
 bool Util_IsWindowShown (HWND);
 DWORD Util_GetHotkey (DWORD);
 LSTATUS Util_SetHotkey (DWORD, DWORD);
+void Util_PrintWindowsLastError ();
 bool operator==(RECT, RECT);
 bool operator!=(RECT, RECT);
