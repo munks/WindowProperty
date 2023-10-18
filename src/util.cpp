@@ -122,3 +122,17 @@ LSTATUS Util_SetHotkey (DWORD hotkey, DWORD vk) {
 	
 	return RegSetValueEx(m_regkey, keystr, 0, REG_DWORD, (BYTE*)&vk, sizeof(DWORD));
 }
+
+void Util_PrintWindowsLastError () {
+	LPTSTR msg;
+	
+	FormatMessage(	FORMAT_MESSAGE_ALLOCATE_BUFFER |
+					FORMAT_MESSAGE_FROM_SYSTEM | 
+					FORMAT_MESSAGE_IGNORE_INSERTS,
+					NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					(LPTSTR)&msg, 0, NULL);
+	
+	MessageBox(NULL, msg, TEXT("GetLastError"), MB_OK);
+	
+	LocalFree(msg);
+}

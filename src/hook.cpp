@@ -7,6 +7,7 @@ int h_moveHotkey = 0;
 int h_clipHotkey = 0;
 
 HHOOK h_hookMove = 0;
+HANDLE h_hookClip = 0;
 HHOOK h_hkHook = 0;
 DWORD h_hkId;
 BOOL h_cc = FALSE;
@@ -90,6 +91,19 @@ LRESULT CALLBACK MoveHook (int nCode, WPARAM wParam, LPARAM lParam) {
 		}
 	}
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+DWORD WINAPI ClipCheck (LPVOID param) {
+	RECT rect;
+	
+	while (h_hookClip) {
+		GetWindowRect((HWND)param, &rect);
+		ClipCursor(&rect);
+		Sleep(1);
+	}
+	ClipCursor(NULL);
+	
+	return 0;
 }
 
 //External
@@ -264,18 +278,20 @@ void Hook_MouseHook () {
 void Hook_ClipCursor () {
 	RECT tmpRect;
 	
-	GetClipCursor(&tmpRect);
-	
-	if (tmpRect != h_ccRect[1]) {
-		GetClipCursor(&h_ccRect[0]);
-		GetWindowRect(GetForegroundWindow(), &h_ccRect[1]);
-		if (ClipCursor(&h_ccRect[1])) {
+	if (!h_hookClip) {
+		GetWindowRect(GetForegroundWindow(), &tmpRect);
+		if (ClipCursor(&tmpRect)) {
+			h_hookClip = CreateThread(NULL, 0, ClipCheck, (LPVOID)GetForegroundWindow(), 0, NULL);
 			Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_ACTIVE, 3000);
 		} else {
 			Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_FAILED, 3000);
 		}
 	} else {
-		ClipCursor(&h_ccRect[0]);
+		h_hookClip = 0;
 		Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_DEACTIVE, 3000);
 	}
+	
+	#ifdef _DEBUG
+	printf("Cursor Hook %s\n", h_hookClip ? "Attached" : "Detached");
+	#endif
 }
