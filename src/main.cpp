@@ -9,6 +9,7 @@ HFONT m_font;
 HKEY m_regkey;
 
 //Function
+#define CreateButtonMacro(h, id, cb, x, y, cx, cy) Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, cb, x, y, cx, cy, ID_BUTTON_##id)
 
 void Main_Close () {
 	DestroyMenu(me_menu);
@@ -17,6 +18,105 @@ void Main_Close () {
 	Menu_RemoveNotifyIcon();
 	FreeLibrary(c_comctlModule);
 	PostQuitMessage(0);
+}
+
+LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	HWND tmphwnd;
+	LONG_PTR style;
+	
+	#ifdef _DEBUG
+	Debug_ConvertWindowMessage(uMsg);
+	#endif
+	
+	WindowEventCase(uMsg) {
+		WindowEvent(WM_INITDIALOG) {
+			//Set Style Button
+			Control_PropDialogInit(hwnd, u_filter[0], u_filter[1], true);
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		}
+		WindowEvent(WM_LBUTTONDOWN) {
+			SetFocus(hwnd);
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		}
+		WindowEvent(WM_COMMAND) {
+			DialogEventCase(EventDialog()) {
+				//Confirm/Cancel
+				DialogEvent(ID_BUTTON_PROP_CONFIRM) {
+					if (EventMessage() == BN_CLICKED) {
+						u_filter[0][0] = 0;
+						u_filter[0][1] = 0;
+						u_filter[1][0] = 0;
+						u_filter[1][1] = 0;
+						
+						for (int i = 0; i < 32; i++) {
+							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
+								switch (Button_GetCheck(tmphwnd)) {
+									case BST_CHECKED: u_filter[0][0] |= 1 << i; break;
+									case BST_INDETERMINATE: u_filter[0][1] |= 1 << i; break;
+								}
+							}
+							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
+								switch (Button_GetCheck(tmphwnd)) {
+									case BST_CHECKED: u_filter[1][0] |= 1 << i; break;
+									case BST_INDETERMINATE: u_filter[1][1] |= 1 << i; break;
+								}
+							}
+						}
+						EndDialog(hwnd, 0);
+					}
+					break;
+				}
+				DialogEvent(ID_BUTTON_PROP_CANCEL) {
+					if (EventMessage() == BN_CLICKED) {
+						EndDialog(hwnd, 1);
+					}
+					break;
+				}
+				//Button On/Off (Multiple Style)
+				DialogEvent(ID_BUTTON_STL_PW)
+				DialogEvent(ID_BUTTON_STL_CAPTION)
+				DialogEvent(ID_BUTTON_STL_OLW)
+				DialogEvent(ID_BUTTON_EXSTL_PW)
+				DialogEvent(ID_BUTTON_EXSTL_OLW)
+				DialogEvent(ID_BUTTON_STL_TM)
+				DialogEvent(ID_BUTTON_STL_GM)
+				DialogEvent(ID_BUTTON_STL_TS)
+				DialogEvent(ID_BUTTON_STL_SYSMENU)
+				DialogEvent(ID_BUTTON_STL_DLGFRAME)
+				DialogEvent(ID_BUTTON_STL_BORDER)
+				DialogEvent(ID_BUTTON_STL_POPUP)
+				DialogEvent(ID_BUTTON_EXSTL_TM)
+				DialogEvent(ID_BUTTON_EXSTL_TW)
+				DialogEvent(ID_BUTTON_EXSTL_WE)
+				DialogEvent(ID_BUTTON_EXSTL_CE) {
+					if (EventMessage() == BN_CLICKED) {
+						Control_PropDialogButtonState(hwnd, EventDialog(), (HWND)lParam);
+					}
+					break;
+				}
+				//Open Link (Style Description
+				DialogEvent(ID_STATIC_STYLE) {
+					if (EventMessage() == STN_CLICKED) {
+						ShellExecute(NULL, L"open", LINK_STYLE, NULL, NULL, SW_SHOWNORMAL);
+					}
+					break;
+				}
+				DialogEvent(ID_STATIC_EXSTYLE) {
+					if (EventMessage() == STN_CLICKED) {
+						ShellExecute(NULL, L"open", LINK_EXSTYLE, NULL, NULL, SW_SHOWNORMAL);
+					}
+					break;
+				}
+			}
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		}
+		WindowEvent(WM_CLOSE) {
+			EndDialog(hwnd, 1);
+			return 0;
+		}
+	}
+	
+	return 0;
 }
 
 LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -35,9 +135,6 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	#endif
 	
 	WindowEventCase(uMsg) {
-		WindowEvent(WM_CREATE) {
-			break;
-		}
 		WindowEvent(WM_NOTIFY) {
 			//Prevent List-View Header Control
 			if (ListViewMessage() == HDN_BEGINTRACK)
@@ -71,14 +168,6 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 		WindowEvent(WM_COMMAND) {
 			DialogEventCase(EventDialog()) {
-				DialogEvent(ID_MAIN) {
-					//Enter Key Event
-					if (GetFocus() == GetDlgItem(hwnd, ID_EDIT_ALPHA)) {
-						SendMessage(GetDlgItem(hwnd, ID_BUTTON_OPACITY), BM_CLICK, 0, 0);
-						SetFocus(GetDlgItem(hwnd, ID_EDIT_ALPHA));
-					}
-					break;
-				}
 				DialogEvent(ID_BUTTON_PROP)
 				DialogEvent(ID_BUTTON_NAME)
 				DialogEvent(ID_BUTTON_OPACITY)
@@ -86,7 +175,8 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				DialogEvent(ID_BUTTON_CMD)
 				DialogEvent(ID_BUTTON_CAPTURE)
 				DialogEvent(ID_BUTTON_OPEN)
-				DialogEvent(ID_BUTTON_HOTKEY) {
+				DialogEvent(ID_BUTTON_HOTKEY)
+				DialogEvent(ID_BUTTON_FILTER) {
 					if (EventMessage() == BN_CLICKED) {
 						//Change Window Property
 						void (*executionFunc)(HWND, HWND, LPCWSTR) = NULL;
@@ -114,6 +204,12 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 								//Show Hotkey Window
 								ShowWindow(h_window, SW_SHOW);
 								break;
+							case ID_BUTTON_FILTER:
+								if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), hwnd, FilterProc)) {
+									Log_Message(LOG_CHANGE_FILTER, NULL);
+								}
+								Control_RefreshListView();
+								break;
 						}
 						
 						if (executionFunc == NULL) { break; }
@@ -125,7 +221,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 						if (IsWindow((HWND)_wtoi(pidhwnd))) {
 							executionFunc((HWND)_wtoi(pidhwnd), (HWND)lParam, name);
 						} else {
-							Log_Message(L"윈도우를 찾을 수 없습니다. (HWND: %u)", (HWND)_wtoi(pidhwnd), name);
+							Log_Message(LOG_NO_WINDOW, (HWND)_wtoi(pidhwnd), name);
 						}
 						Control_RefreshListView();
 					}
@@ -141,12 +237,6 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				DialogEvent(ID_BUTTON_CLIP) {
 					if (EventMessage() == BN_CLICKED) {
 						Hook_ClipHotkeyRegister(Button_GetCheck((HWND)lParam));
-					}
-					break;
-				}
-				DialogEvent(ID_BUTTON_ALL) {
-					if (EventMessage() == BN_CLICKED) {
-						Control_RefreshListView();
 					}
 					break;
 				}
@@ -283,13 +373,13 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	}
 	
 	//Create Button (PROP)
-	Control_CreateButton(m_main, BUTTON_PROP_CAPTION, BUTTON_PROP_TOOLTIP, false, 475, 10, 100, 30, ID_BUTTON_PROP);
+	CreateButtonMacro(m_main, PROP, false, 475, 10, 100, 30);
 	
 	//Create Button (NAME)
-	Control_CreateButton(m_main, BUTTON_NAME_CAPTION, BUTTON_NAME_TOOLTIP, false, 475, 50, 100, 30, ID_BUTTON_NAME);
+	CreateButtonMacro(m_main, NAME, false, 475, 50, 100, 30);
 	
 	//Create Button (OPACITY)
-	Control_CreateButton(m_main, BUTTON_OPACITY_CAPTION, BUTTON_OPACITY_TOOLTIP, false, 475, 90, 100, 30, ID_BUTTON_OPACITY);
+	CreateButtonMacro(m_main, OPACITY, false, 475, 90, 100, 30);
 	
 	//Create Edit (OPACITY-ALPHA)
 	Control_CreateEdit(m_main, BUTTON_OPACITY_TOOLTIP, 475, 125, 27, 20, ID_EDIT_ALPHA, L"100");
@@ -298,28 +388,28 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	Control_CreateStatic(m_main, 504, 126, 16, 20, ID_STATIC_PERCENTAGE, L"%");
 	
 	//Create Button (FULL SCREEN)
-	Control_CreateButton(m_main, BUTTON_SCREEN_CAPTION, BUTTON_SCREEN_TOOLTIP, false, 475, 150, 100, 30, ID_BUTTON_SCREEN);
+	CreateButtonMacro(m_main, SCREEN, false, 475, 150, 100, 30);
 	
 	//Create Button (Command Line)
-	Control_CreateButton(m_main, BUTTON_CMD_CAPTION, BUTTON_CMD_TOOLTIP, false, 475, 190, 100, 30, ID_BUTTON_CMD);
+	CreateButtonMacro(m_main, CMD, false, 475, 190, 100, 30);
 	
 	//Create Button (CAPTURE)
-	Control_CreateButton(m_main, BUTTON_CAPTURE_CAPTION, BUTTON_CAPTURE_TOOLTIP, false, 475, 230, 100, 30, ID_BUTTON_CAPTURE);
+	CreateButtonMacro(m_main, CAPTURE, false, 475, 230, 100, 30);
 	
 	//Create Button (OPEN)
-	Control_CreateButton(m_main, BUTTON_OPEN_CAPTION, BUTTON_OPEN_TOOLTIP, false, 475, 270, 100, 30, ID_BUTTON_OPEN);
+	CreateButtonMacro(m_main, OPEN, false, 475, 270, 100, 30);
 	
 	//Create Button (HOTKEY)
-	Control_CreateButton(m_main, BUTTON_HOTKEY_CAPTION, BUTTON_HOTKEY_TOOLTIP, false, 475, 310, 100, 30, ID_BUTTON_HOTKEY);
+	CreateButtonMacro(m_main, HOTKEY, false, 475, 310, 100, 30);
 	
-	//Create Button (ALL)
-	Control_CreateButton(m_main, BUTTON_ALL_CAPTION, BUTTON_ALL_TOOLTIP, true, 475, 350, 100, 30, ID_BUTTON_ALL);
-	
-	//Create Button (CLIP)
-	Control_CreateButton(m_main, BUTTON_CLIP_CAPTION, BUTTON_CLIP_TOOLTIP, true, 475, 390, 100, 30, ID_BUTTON_CLIP);
+	//Create Button (FILTER)
+	CreateButtonMacro(m_main, FILTER, false, 475, 350, 100, 30);
 	
 	//Create Button (MOVE)
-	Control_CreateButton(m_main, BUTTON_MOVE_CAPTION, BUTTON_MOVE_TOOLTIP, true, 475, 430, 100, 30, ID_BUTTON_MOVE);
+	CreateButtonMacro(m_main, MOVE, true, 475, 390, 100, 30);
+	
+	//Create Button (CLIP)
+	CreateButtonMacro(m_main, CLIP, true, 475, 430, 100, 30);
 	
 	//Create List-View
 	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 440, ID_LIST);

@@ -1,6 +1,4 @@
-#ifndef LANG
-	#include "TextDefinition.h"
-#elif LANG == KOKR
+#if LANG == KOKR
 	#include "TextDefinition_koKR.h"
 #else
 	#include "TextDefinition.h"
@@ -19,7 +17,7 @@
 #define ID_BUTTON_OPACITY		104
 #define ID_BUTTON_SCREEN		105
 #define ID_BUTTON_MOVE			106
-#define ID_BUTTON_ALL			107
+#define ID_BUTTON_FILTER		107
 #define ID_BUTTON_CAPTURE		108
 #define ID_BUTTON_CLIP			109
 #define ID_BUTTON_HOTKEY		110

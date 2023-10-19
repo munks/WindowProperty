@@ -50,8 +50,8 @@
 #define BUTTON_HOTKEY_TOOLTIP		L"Change Utilities Hotkey"
 
 //ID_BUTTON_ALL
-#define BUTTON_ALL_CAPTION			L"Show All"
-#define BUTTON_ALL_TOOLTIP			L"Show Hidden Windows"
+#define BUTTON_FILTER_CAPTION		L"Search Filter"
+#define BUTTON_FILTER_TOOLTIP		L"Change Window Search Filter (Check: Include, Indeterminate: Exclude)"
 
 //ID_BUTTON_CLIP
 #define BUTTON_CLIP_CAPTION			L"Clip Cursor"
@@ -96,3 +96,5 @@
 #define LOG_CHANGE_CAPTURE			L"Set Window Capture Status To %ls. (%ls)"
 #define LOG_SE_FAILED				L"Failed To Run Program. (%ls)"
 #define LOG_OPEN_DIRECTORY			L"Opened Program's Directory Folder. (%ls)"
+#define LOG_NO_WINDOW				L"Could Not Found Window. (HWND: %u)"
+#define LOG_CHANGE_FILTER			L"Changed Window Search Filter."

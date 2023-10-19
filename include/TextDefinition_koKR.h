@@ -50,8 +50,8 @@
 #define BUTTON_HOTKEY_TOOLTIP		L"유틸리티 단축키 변경"
 
 //ID_BUTTON_ALL
-#define BUTTON_ALL_CAPTION			L"모두 표시"
-#define BUTTON_ALL_TOOLTIP			L"모든 창 표시 (숨김 창 포함)"
+#define BUTTON_FILTER_CAPTION		L"검색 필터 변경"
+#define BUTTON_FILTER_TOOLTIP		L"검색할 창의 필터를 변경 (체크: 포함, 불확정 체크: 제외)"
 
 //ID_BUTTON_CLIP
 #define BUTTON_CLIP_CAPTION			L"커서 가두기"
@@ -86,13 +86,15 @@
 
 //Log
 #define LOG_NO_PROGRAM				L"명령줄 인수를 받아오는 프로그램이 없습니다. (%ls)"
-#define LOG_SET_PROP				L"윈도우 설정을 변경했습니다. (%ls)"
-#define LOG_CHANGE_CAPTION			L"윈도우 제목을 변경했습니다. (%ls)"
-#define LOG_SET_OPACITY				L"윈도우 불투명도를 %d%%로 설정했습니다. (%ls)"
-#define LOG_CHANGE_SCREEN			L"윈도우를 %ls로 설정했습니다. (%ls)"
+#define LOG_SET_PROP				L"창 설정을 변경했습니다. (%ls)"
+#define LOG_CHANGE_CAPTION			L"창 제목을 변경했습니다. (%ls)"
+#define LOG_SET_OPACITY				L"창 불투명도를 %d%%로 설정했습니다. (%ls)"
+#define LOG_CHANGE_SCREEN			L"창을 %ls로 설정했습니다. (%ls)"
 #define LOG_CHANGE_SCREEN_WINDOW	L"창 모드"
 #define LOG_CHANGE_SCREEN_FULL		L"전체 화면"
 #define LOG_GET_COMMAND				L"프로세스의 명령줄 인수를 받아왔습니다. (%ls)"
-#define LOG_CHANGE_CAPTURE			L"윈도우의 캡쳐 가능 여부를 %ls 상태로 변경했습니다. (%ls)"
+#define LOG_CHANGE_CAPTURE			L"창의 캡쳐 가능 여부를 %ls 상태로 변경했습니다. (%ls)"
 #define LOG_SE_FAILED				L"프로그램의 실행에 실패했습니다. (%ls)"
 #define LOG_OPEN_DIRECTORY			L"프로그램의 경로 폴더를 열었습니다. (%ls)"
+#define LOG_NO_WINDOW				L"창을 찾을 수 없습니다. (HWND: %u)"
+#define LOG_CHANGE_FILTER			L"창 검색 필터를 변경했습니다."

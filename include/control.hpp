@@ -21,6 +21,8 @@ HWND Control_CreateStatic (HWND, int, int, int, int, int, LPCWSTR);
 void Control_CreateListView (HWND, LPCWSTR, int, int, int, int, int);
 void Control_RefreshListView ();
 void Control_SetChangeText (HWND, HWND);
+void Control_PropDialogInit (HWND, LONG_PTR[], LONG_PTR[], bool);
+void Control_PropDialogButtonState (HWND, int, HWND);
 
 extern HMODULE c_comctlModule;
 extern HWND c_listView;
