@@ -9,110 +9,23 @@ LONG_PTR p_currentProp[2];
 
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
 
-bool DlgsIsChecked (HWND hwnd, int init, int id1, int id2, int id3, int id4, int id5) {
-	if (id1 != -1) {
-		if (Button_GetCheck(GetDlgItem(hwnd, init + id1)) != BST_CHECKED) {
-			return false;
-		}
-	}
-	if (id2 != -1) {
-		if (Button_GetCheck(GetDlgItem(hwnd, init + id2)) != BST_CHECKED) {
-			return false;
-		}
-	}
-	if (id3 != -1) {
-		if (Button_GetCheck(GetDlgItem(hwnd, init + id3)) != BST_CHECKED) {
-			return false;
-		}
-	}
-	if (id4 != -1) {
-		if (Button_GetCheck(GetDlgItem(hwnd, init + id4)) != BST_CHECKED) {
-			return false;
-		}
-	}
-	if (id5 != -1) {
-		if (Button_GetCheck(GetDlgItem(hwnd, init + id5)) != BST_CHECKED) {
-			return false;
-		}
-	}
-	return true;
-}
-
-void CheckMultiStyleButton (HWND hwnd, int id, HWND ctrl) {
-	BOOL state = Button_GetCheck(ctrl);
-	
-	switch (id) {
-		case ID_BUTTON_STL_PW:
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 19), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 31), state);
-			break;
-		case ID_BUTTON_STL_CAPTION:
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 22), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
-			break;
-		case ID_BUTTON_STL_OLW:
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 16), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 17), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 18), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 19), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 22), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
-			break;
-		case ID_BUTTON_EXSTL_PW:
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 3), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 7), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 8), state);
-			break;
-		case ID_BUTTON_EXSTL_OLW:
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 8), state);
-			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 9), state);
-			break;
-	}
-	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), DlgsIsChecked(hwnd, PROP_BUTTON, 22, 23, -1, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), DlgsIsChecked(hwnd, PROP_BUTTON, 16, 17, 18, 19, 34) ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), DlgsIsChecked(hwnd, PROP_BUTTON, 19, 23, 31, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), DlgsIsChecked(hwnd, PROP_BUTTON_EX, 3, 7, 8, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
-	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), DlgsIsChecked(hwnd, PROP_BUTTON_EX, 8, 9, -1, -1, -1) ? BST_CHECKED : BST_UNCHECKED);
-}
 LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 		
 	#ifdef _DEBUG
+	printf("Dialog");
 	Debug_ConvertWindowMessage(uMsg);
 	#endif
 	
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_INITDIALOG) {
 			//Set Style Button
-			for (int i = 0; i < 32; i++) {
-				if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
-					Button_SetCheck(tmphwnd, p_currentProp[0] & (1 << i) ? BST_CHECKED : BST_UNCHECKED);
-				}
-				if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
-					Button_SetCheck(tmphwnd, p_currentProp[1] & (1 << i) ? BST_CHECKED : BST_UNCHECKED);
-				}
-			}
-			//POPUPWINDOW
-			if (DlgsIsChecked(hwnd, PROP_BUTTON, 19, 23, 31, -1, -1)) {
-				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), BST_CHECKED);
-			}
-			//CAPTION
-			if (DlgsIsChecked(hwnd, PROP_BUTTON, 22, 23, -1, -1, -1)) {
-				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), BST_CHECKED);
-			}
-			//OVERLAPPEDWINDOW
-			if (DlgsIsChecked(hwnd, PROP_BUTTON, 16, 17, 18, 19, 34)) {
-				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), BST_CHECKED);
-			}
-			//PALETTEWINDOW (Extended)
-			if (DlgsIsChecked(hwnd, PROP_BUTTON_EX, 3, 7, 8, -1, -1)) {
-				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), BST_CHECKED);
-			}
-			//OVERLAPPEDWINDOW (Extended)
-			if (DlgsIsChecked(hwnd, PROP_BUTTON_EX, 8, 9, -1, -1, -1)) {
-				Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), BST_CHECKED);
-			}
+			Control_PropDialogInit(hwnd, &p_currentProp[0], &p_currentProp[1], false);
+			
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		}
+		WindowEvent(WM_LBUTTONDOWN) {
+			SetFocus(hwnd);
 			return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
 		WindowEvent(WM_COMMAND) {
@@ -163,7 +76,7 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				DialogEvent(ID_BUTTON_EXSTL_WE)
 				DialogEvent(ID_BUTTON_EXSTL_CE) {
 					if (EventMessage() == BN_CLICKED) {
-						CheckMultiStyleButton(hwnd, EventDialog(), (HWND)lParam);
+						Control_PropDialogButtonState(hwnd, EventDialog(), (HWND)lParam);
 					}
 					break;
 				}
@@ -181,8 +94,12 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 					break;
 				}
 			}
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
-		return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		WindowEvent(WM_CLOSE) {
+			EndDialog(hwnd, 1);
+			return 0;
+		}
 	}
 	
 	return 0;
@@ -382,7 +299,7 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	CloseHandle(handle);
 	
 	wcscpy(exe, !iswow64 ? L"dllinjector_x64.exe" : L"dllinjector_x86.exe");
-	wcscpy(dll, !iswow64 ? L"cmdline_x64.dll" : L"cmdline_x86.dll");
+	wcscpy(dll, !iswow64 ? L"cmdcapture_x64.dll" : L"cmdcapture_x86.dll");
 	
 	if (CheckAbsolutePath(exe)) { return; }
 	if (CheckAbsolutePath(dll)) { return; }

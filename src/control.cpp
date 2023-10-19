@@ -48,6 +48,49 @@ void CreateTooltip (HWND hwnd, HWND hitem, LPCWSTR tooltip) {
 	SendMessage(tmphwnd, TTM_ADDTOOL, 0, (LPARAM)&ti);
 }
 
+int CheckDlgButtonState (HWND hwnd, int init, int id1, int id2, int id3, int id4, int id5) {
+	int state[3] = {};
+	int cnt = 0;
+	
+	if (id1 != -1) {
+		state[Button_GetCheck(GetDlgItem(hwnd, init + id1))]++;
+		cnt++;
+	}
+	if (id2 != -1) {
+		state[Button_GetCheck(GetDlgItem(hwnd, init + id2))]++;
+		cnt++;
+	}
+	if (id3 != -1) {
+		state[Button_GetCheck(GetDlgItem(hwnd, init + id3))]++;
+		cnt++;
+	}
+	if (id4 != -1) {
+		state[Button_GetCheck(GetDlgItem(hwnd, init + id4))]++;
+		cnt++;
+	}
+	if (id5 != -1) {
+		state[Button_GetCheck(GetDlgItem(hwnd, init + id5))]++;
+		cnt++;
+	}
+	
+	if (state[BST_UNCHECKED] == cnt) {
+		return BST_UNCHECKED;
+	} else if (state[BST_CHECKED] == cnt) {
+		return BST_CHECKED;
+	} else if (state[BST_INDETERMINATE] == cnt) {
+		return BST_INDETERMINATE;
+	}
+	
+	return BST_UNCHECKED;
+}
+
+void ButtonSetType (HWND btn, LONG_PTR type) {
+	LONG_PTR style = GetWindowLongPtr(btn, GWL_STYLE);
+	
+	style &= ~0x000F;
+	SetWindowLongPtr(btn, GWL_STYLE, style | type);
+}
+
 //External
 
 void Control_InitDLL () {
@@ -63,7 +106,7 @@ HWND Control_CreateButton (HWND hwnd, LPCWSTR caption, LPCWSTR tooltip, bool che
 	
 	tmphwnd = CreateWindow(L"BUTTON", caption,
 							WS_BORDER | WS_CHILD | WS_VISIBLE | WS_TABSTOP |
-							BS_CENTER | BS_VCENTER | (BS_AUTOCHECKBOX * checkbox),
+							BS_CENTER | BS_VCENTER | checkbox * BS_AUTOCHECKBOX,
 							x, y, w, h,
 							hwnd, (HMENU)idtf, m_hInstance, NULL);
 	Util_CheckError(tmphwnd);
@@ -176,7 +219,7 @@ void Control_RefreshListView () {
 	//Loop Macro (while)
 	ProcessLoop {
 		WindowLoop(ProcessLoopID()) {
-			if (Util_IsWindowShown(WindowLoopHandle())) {
+			if (Util_WindowFilter(WindowLoopHandle())) {
 				icon = (HICON)GetClassLongPtr(WindowLoopHandle(), GCLP_HICON);
 				IL_ReplaceIcon(c_imageList, -1, icon ? icon : LoadIcon(NULL, IDI_APPLICATION));
 				outputText[0] = L'\0';
@@ -235,4 +278,83 @@ void Control_SetChangeText (HWND hwnd, HWND capture) {
 	//Capture
 	GetWindowDisplayAffinity(hwnd, &wda);
 	SetButtonText(capture, wda, CAPTURE);
+}
+
+void Control_PropDialogInit (HWND hwnd, LONG_PTR style[], LONG_PTR exstyle[], bool exclude) {
+	HWND tmphwnd;
+	LONG_PTR prop;
+	
+	for (int i = 0; i < 32; i++) {
+		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
+			prop = (style[0] & (1 << i)) ? BST_CHECKED : BST_UNCHECKED;
+			if (exclude) {
+				ButtonSetType(tmphwnd, BS_AUTO3STATE);
+				prop = (style[1] & (1 << i)) ? BST_INDETERMINATE : prop;
+			}
+			Button_SetCheck(tmphwnd, prop);
+		}
+		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
+			prop = (exstyle[0] & (1 << i)) ? BST_CHECKED : BST_UNCHECKED;
+			if (exclude) {
+				ButtonSetType(tmphwnd, BS_AUTO3STATE);
+				prop = (exstyle[1] & (1 << i)) ? BST_INDETERMINATE : prop;
+			}
+			Button_SetCheck(tmphwnd, prop);
+		}
+	}
+	if (exclude) {
+		ButtonSetType(GetDlgItem(hwnd, ID_BUTTON_STL_PW), BS_AUTO3STATE);
+		ButtonSetType(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), BS_AUTO3STATE);
+		ButtonSetType(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), BS_AUTO3STATE);
+		ButtonSetType(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), BS_AUTO3STATE);
+		ButtonSetType(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), BS_AUTO3STATE);
+	}
+	//POPUPWINDOW
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), CheckDlgButtonState(hwnd, PROP_BUTTON, 19, 23, 31, -1, -1));
+	//CAPTION
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), CheckDlgButtonState(hwnd, PROP_BUTTON, 22, 23, -1, -1, -1));
+	//OVERLAPPEDWINDOW
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), CheckDlgButtonState(hwnd, PROP_BUTTON, 16, 17, 18, 19, 34));
+	//PALETTEWINDOW (Extended)
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), CheckDlgButtonState(hwnd, PROP_BUTTON_EX, 3, 7, 8, -1, -1));
+	//OVERLAPPEDWINDOW (Extended)
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), CheckDlgButtonState(hwnd, PROP_BUTTON_EX, 8, 9, -1, -1, -1));
+}
+
+void Control_PropDialogButtonState (HWND hwnd, int id, HWND ctrl) {
+	BOOL state = Button_GetCheck(ctrl);
+	
+	switch (id) {
+		case ID_BUTTON_STL_PW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 19), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 31), state);
+			break;
+		case ID_BUTTON_STL_CAPTION:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 22), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
+			break;
+		case ID_BUTTON_STL_OLW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 16), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 17), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 18), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 19), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 22), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON + 23), state);
+			break;
+		case ID_BUTTON_EXSTL_PW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 3), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 7), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 8), state);
+			break;
+		case ID_BUTTON_EXSTL_OLW:
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 8), state);
+			Button_SetCheck(GetDlgItem(hwnd, PROP_BUTTON_EX + 9), state);
+			break;
+	}
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), CheckDlgButtonState(hwnd, PROP_BUTTON, 19, 23, 31, -1, -1));
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), CheckDlgButtonState(hwnd, PROP_BUTTON, 22, 23, -1, -1, -1));
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), CheckDlgButtonState(hwnd, PROP_BUTTON, 16, 17, 18, 19, 34));
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), CheckDlgButtonState(hwnd, PROP_BUTTON_EX, 3, 7, 8, -1, -1));
+	Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), CheckDlgButtonState(hwnd, PROP_BUTTON_EX, 8, 9, -1, -1, -1));
 }

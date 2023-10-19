@@ -1,5 +1,9 @@
 #include "global.hpp"
 
+//Variable
+
+LONG_PTR u_filter[2][2] = {{WS_VISIBLE, 0}, {0, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE}};
+
 //Internal
 
 bool CheckErrorFunc (void* checkVar, LPCSTR file, int line, LPCSTR targetValName) {
@@ -82,16 +86,22 @@ ULONG Util_GetProcessID (HWND hwnd) {
 	return idProc;
 }
 
-bool Util_IsWindowShown (HWND hwnd) {
+bool Util_WindowFilter (HWND hwnd) {
 	int style = GetWindowStyle(hwnd);
 	int exstyle = GetWindowExStyle(hwnd);
-
-	if (!Button_GetCheck(GetDlgItem(m_main, ID_BUTTON_ALL))) {
-		if (!(style & WS_VISIBLE)) {
-			return false;
-		}
+	
+	//Include
+	if ((style & u_filter[0][0]) != u_filter[0][0]) {
+		return false;
 	}
-	if (exstyle & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)) {
+	if ((exstyle & u_filter[1][0]) != u_filter[1][0]) {
+		return false;
+	}
+	//Exclude
+	if (style & u_filter[0][1]) {
+		return false;
+	}
+	if (exstyle & u_filter[1][1]) {
 		return false;
 	}
 	
