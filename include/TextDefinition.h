@@ -98,3 +98,13 @@
 #define LOG_OPEN_DIRECTORY			L"Opened Program's Directory Folder. (%ls)"
 #define LOG_NO_WINDOW				L"Could Not Found Window. (HWND: %u)"
 #define LOG_CHANGE_FILTER			L"Changed Window Search Filter."
+
+//Dialog
+#define DLG_PROP_TITLE				L"Properties"
+#define DLG_PROP_LINK_STYLE			L"See Window Style Description (Click)"
+#define DLG_PROP_LINK_EXSTYLE		L"See Extended Window Style Description (Click)"
+#define DLG_PROP_ADD_PROP			L"Fixed Setting"
+#define DLG_PROP_ADD2_PROP			L"Fix Release"
+#define DLG_PROP_ADD2_FILTER		L"Reset"
+#define DLG_PROP_CONFIRM			L"Confirm"
+#define DLG_PROP_CANCEL				L"Cancel"

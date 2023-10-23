@@ -4,6 +4,7 @@
 
 wchar_t p_caption[MAX_PATH];
 LONG_PTR p_currentProp[2];
+HWND p_currentHwnd;
 
 //Internal
 
@@ -11,17 +12,25 @@ LONG_PTR p_currentProp[2];
 
 LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
-		
+	LONG_PTR tmpProp[2];
+	wchar_t cls[256];
+	HKEY key;
+	
 	#ifdef _DEBUG
-	printf("Dialog");
 	Debug_ConvertWindowMessage(uMsg);
 	#endif
 	
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_INITDIALOG) {
 			//Set Style Button
-			Control_PropDialogInit(hwnd, &p_currentProp[0], &p_currentProp[1], false);
+			Control_PropDialogInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, DLG_PROP_ADD_PROP, DLG_PROP_ADD2_PROP);
 			
+			GetClassName(p_currentHwnd, cls, 256);
+			if (RegOpenKeyEx(m_regset, cls, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
+				EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
+			} else {
+				RegCloseKey(key);
+			}
 			return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
 		WindowEvent(WM_LBUTTONDOWN) {
@@ -30,31 +39,47 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 		WindowEvent(WM_COMMAND) {
 			DialogEventCase(EventDialog()) {
+				//Fixed Setting
 				//Confirm/Cancel
+				DialogEvent(ID_BUTTON_PROP_ADD)
 				DialogEvent(ID_BUTTON_PROP_CONFIRM) {
 					if (EventMessage() == BN_CLICKED) {
-						p_currentProp[0] = 0;
-						p_currentProp[1] = 0;
+						tmpProp[0] = 0;
+						tmpProp[1] = 0;
 						
 						for (int i = 0; i < 32; i++) {
 							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
 								if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
-									p_currentProp[0] |= 1 << i;
+									tmpProp[0] |= 1 << i;
 								}
 							}
 							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
 								if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
-									p_currentProp[1] |= 1 << i;
+									tmpProp[1] |= 1 << i;
 								}
 							}
 						}
-						EndDialog(hwnd, 0);
+						if (EventDialog() == ID_BUTTON_PROP_CONFIRM) {
+							p_currentProp[0] = tmpProp[0];
+							p_currentProp[1] = tmpProp[1];
+							EndDialog(hwnd, 0);
+						} else if (EventDialog() == ID_BUTTON_PROP_ADD) {
+							Util_SettingConfig(tmpProp, p_currentHwnd, true);
+							EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), TRUE);
+						}
 					}
 					break;
 				}
 				DialogEvent(ID_BUTTON_PROP_CANCEL) {
 					if (EventMessage() == BN_CLICKED) {
 						EndDialog(hwnd, 1);
+					}
+					break;
+				}
+				DialogEvent(ID_BUTTON_PROP_ADD2) {
+					if (EventMessage() == BN_CLICKED) {
+						Util_SettingConfig(NULL, p_currentHwnd, false);
+						EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
 					}
 					break;
 				}
@@ -214,6 +239,7 @@ wchar_t* FormatSEError (INT_PTR err) {
 void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	p_currentProp[0] = GetWindowLongPtr(hwnd, GWL_STYLE);
 	p_currentProp[1] = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+	p_currentHwnd = hwnd;
 	
 	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), GetAncestor(ctrl, GA_PARENT), PropProc)) {
 		//Set Window Properties

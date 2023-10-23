@@ -2,7 +2,7 @@
 
 //Variable
 
-LONG_PTR u_filter[2][2] = {{WS_VISIBLE, 0}, {0, WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE}};
+LONG_PTR u_filter[2][2] = {{WS_VISIBLE, 0}, {0, WS_EX_TOOLWINDOW | WS_EX_NOREDIRECTIONBITMAP | WS_EX_NOACTIVATE}};
 
 //Internal
 
@@ -145,4 +145,21 @@ void Util_PrintWindowsLastError () {
 	MessageBox(NULL, msg, TEXT("GetLastError"), MB_OK);
 	
 	LocalFree(msg);
+}
+
+void Util_SettingConfig (LONG_PTR* prop, HWND hwnd, bool add) {
+	wchar_t name[256];
+	HKEY key;
+	
+	GetClassName(hwnd, name, 256);
+	RegCreateKeyEx(m_regset, name, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
+	
+	if (add) {
+		RegSetValueEx(key, L"Style", 0, REG_DWORD, (BYTE*)&prop[0], sizeof(DWORD));
+		RegSetValueEx(key, L"ExStyle", 0, REG_DWORD, (BYTE*)&prop[1], sizeof(DWORD));
+	} else {
+		RegDeleteTree(key, NULL);
+	}
+	
+	RegCloseKey(key);
 }

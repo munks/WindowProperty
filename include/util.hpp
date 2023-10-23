@@ -7,6 +7,7 @@ bool Util_WindowFilter (HWND);
 DWORD Util_GetHotkey (DWORD);
 LSTATUS Util_SetHotkey (DWORD, DWORD);
 void Util_PrintWindowsLastError ();
+void Util_SettingConfig (LONG_PTR*, HWND, bool);
 bool operator==(RECT, RECT);
 bool operator!=(RECT, RECT);
 

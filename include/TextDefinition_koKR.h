@@ -98,3 +98,13 @@
 #define LOG_OPEN_DIRECTORY			L"프로그램의 경로 폴더를 열었습니다. (%ls)"
 #define LOG_NO_WINDOW				L"창을 찾을 수 없습니다. (HWND: %u)"
 #define LOG_CHANGE_FILTER			L"창 검색 필터를 변경했습니다."
+
+//Dialog
+#define DLG_PROP_TITLE				L"속성"
+#define DLG_PROP_LINK_STYLE			L"윈도우 스타일 설명 보기 (클릭)"
+#define DLG_PROP_LINK_EXSTYLE		L"확장 윈도우 스타일 설명 보기 (클릭)"
+#define DLG_PROP_ADD_PROP			L"설정 고정"
+#define DLG_PROP_ADD2_PROP			L"고정 해제"
+#define DLG_PROP_ADD2_FILTER		L"초기화"
+#define DLG_PROP_CONFIRM			L"확인"
+#define DLG_PROP_CANCEL				L"취소"
