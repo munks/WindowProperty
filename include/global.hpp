@@ -13,14 +13,17 @@ process.cpp - p_#Var
 
 //Definition
 #define UNICODE
+#define WINVER 0x0606
 #undef __STRICT_ANSI__
 #define WM_ICONNOTIFY 0x8001
+#define _RESTRICT_WM
 
 //Include Standard
 #include <stdio.h>
 #include <wchar.h>
 #include <math.h>
 #include <time.h>
+#include <locale.h>
 #include <windows.h>
 #include <windowsx.h>
 #include <psapi.h>

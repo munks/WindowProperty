@@ -7,6 +7,7 @@ HBRUSH m_hbrush;
 HINSTANCE m_hInstance;
 HFONT m_font;
 HKEY m_regkey;
+HKEY m_regset;
 
 //Function
 #define CreateButtonMacro(h, id, cb, x, y, cx, cy) Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, cb, x, y, cx, cy, ID_BUTTON_##id)
@@ -15,6 +16,7 @@ void Main_Close () {
 	DestroyMenu(me_menu);
 	DeleteObject(m_font);
 	RegCloseKey(m_regkey);
+	RegCloseKey(m_regset);
 	Menu_RemoveNotifyIcon();
 	FreeLibrary(c_comctlModule);
 	PostQuitMessage(0);
@@ -31,7 +33,8 @@ LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_INITDIALOG) {
 			//Set Style Button
-			Control_PropDialogInit(hwnd, u_filter[0], u_filter[1], true);
+			Control_PropDialogInit(hwnd, u_filter[0], u_filter[1], true, NULL, DLG_PROP_ADD2_FILTER);
+			
 			return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
 		WindowEvent(WM_LBUTTONDOWN) {
@@ -40,6 +43,29 @@ LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		WindowEvent(WM_COMMAND) {
 			DialogEventCase(EventDialog()) {
+				//Reset
+				DialogEvent(ID_BUTTON_PROP_ADD2) {
+					if (EventMessage() == BN_CLICKED) {
+						for (int i = 0; i < 32; i++) {
+							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
+								Button_SetCheck(tmphwnd, BST_UNCHECKED);
+							}
+							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
+								Button_SetCheck(tmphwnd, BST_UNCHECKED);
+							}
+						}
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_VISIBLE), BST_CHECKED);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_TW), BST_INDETERMINATE);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_NRB), BST_INDETERMINATE);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_NA), BST_INDETERMINATE);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), BST_UNCHECKED);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), BST_UNCHECKED);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), BST_UNCHECKED);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), BST_UNCHECKED);
+						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), BST_UNCHECKED);
+					}
+					break;
+				}
 				//Confirm/Cancel
 				DialogEvent(ID_BUTTON_PROP_CONFIRM) {
 					if (EventMessage() == BN_CLICKED) {
@@ -62,6 +88,10 @@ LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 								}
 							}
 						}
+						RegSetValueEx(m_regset, L"FilterIncludeStyle", 0, REG_DWORD, (BYTE*)&u_filter[0][0], sizeof(DWORD));
+						RegSetValueEx(m_regset, L"FilterExcludeStyle", 0, REG_DWORD, (BYTE*)&u_filter[0][1], sizeof(DWORD));
+						RegSetValueEx(m_regset, L"FilterIncludeExStyle", 0, REG_DWORD, (BYTE*)&u_filter[1][0], sizeof(DWORD));
+						RegSetValueEx(m_regset, L"FilterExcludeExStyle", 0, REG_DWORD, (BYTE*)&u_filter[1][1], sizeof(DWORD));
 						EndDialog(hwnd, 0);
 					}
 					break;
@@ -119,6 +149,35 @@ LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+DWORD WINAPI HWNDDetect (LPVOID param) {
+	DWORD idx = 0, len = 256, size[2];
+	wchar_t name[256];
+	DWORD style[2];
+	HWND hwnd;
+	
+	while (true) {
+		//Search Register - HKEY_CURRENT_USER\SOFTWARE\Valve\Steam\Apps
+		while (RegEnumKeyEx(m_regset, idx++, name, &len, NULL, NULL, NULL, NULL) != ERROR_NO_MORE_ITEMS) {
+			if (hwnd = GetAncestor(FindWindow(name, NULL), GA_ROOTOWNER)) {
+				size[0] = sizeof(style[0]);
+				size[1] = sizeof(style[1]);
+				if ((RegGetValue(m_regset, name, L"Style", RRF_RT_DWORD, NULL, &style[0], &size[0]) == ERROR_SUCCESS) &&
+					(RegGetValue(m_regset, name, L"ExStyle", RRF_RT_DWORD, NULL, &style[1], &size[1]) == ERROR_SUCCESS)) {
+					SetWindowLongPtr(hwnd, GWL_STYLE, style[0]);
+					SetWindowLongPtr(hwnd, GWL_EXSTYLE, style[1]);
+					SetWindowPos(hwnd, style[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
+								0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+				}
+			}
+			len = 256;
+		}
+		idx = 0;
+		Sleep(500);
+	}
+	
+	return 0;
+}
+
 LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 	wchar_t pidhwnd[10];
@@ -153,6 +212,26 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 					Control_SetChangeText(tmphwnd, GetDlgItem(hwnd, ID_BUTTON_CAPTURE));
 					swprintf(text, L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
 					SetDlgItemText(hwnd, ID_EDIT_ALPHA, text);
+				}
+				if (ListViewMessage() == NM_CUSTOMDRAW) {
+					LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
+					wchar_t cls[256];
+					HKEY key;
+					
+					switch (lplvcd->nmcd.dwDrawStage) {
+						case CDDS_PREPAINT: return CDRF_NOTIFYITEMDRAW;
+						case CDDS_ITEMPREPAINT: {
+							ListView_GetItemText(lplvcd->nmcd.hdr.hwndFrom, lplvcd->nmcd.dwItemSpec, 3, pidhwnd, 10);
+							tmphwnd = (HWND)_wtoi(pidhwnd);
+							
+							GetClassName(tmphwnd, cls, 256);
+							if (RegOpenKeyEx(m_regset, cls, 0, KEY_ALL_ACCESS, &key) == ERROR_SUCCESS) {
+								lplvcd->clrText = RGB(255,0,0);
+								RegCloseKey(key);
+							}
+							break;
+						}
+					}
 				}
 			}
 			break;
@@ -331,14 +410,25 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 		return 0;
 	}
 	
+	#ifdef _DEBUG
+	#if LANG == KOKR
+	setlocale(LC_ALL, "ko-KR");
+	#endif
+	#endif
+	
 	//Open Registry
 	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Duality\\WindowProperty", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regkey, NULL);
+	RegCreateKeyEx(m_regkey, L"Settings", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regset, NULL);
 	
 	//Set Global Variables
 	m_hInstance = hInstance;
 	m_hbrush = CreateSolidBrush(RGB(240,240,240));
 	m_font = CreateFont(16,0,0,0,0,0,0,0,HANGEUL_CHARSET,3,2,1,
 						VARIABLE_PITCH | FF_ROMAN, L"Ebrima");
+	RegGetValue(m_regset, NULL, L"FilterIncludeStyle", RRF_RT_DWORD, NULL, &u_filter[0][0], &(size = 4));
+	RegGetValue(m_regset, NULL, L"FilterExcludeStyle", RRF_RT_DWORD, NULL, &u_filter[0][1], &(size = 4));
+	RegGetValue(m_regset, NULL, L"FilterIncludeExStyle", RRF_RT_DWORD, NULL, &u_filter[1][0], &(size = 4));
+	RegGetValue(m_regset, NULL, L"FilterExcludeExStyle", RRF_RT_DWORD, NULL, &u_filter[1][1], &(size = 4));
 	
 	//Control Init
 	Control_InitDLL();
@@ -440,6 +530,9 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	if (strcmp(pCmdLine, "-hide")) {
 		ShowWindow(m_main, SW_SHOW);
 	}
+	
+	//Create Thread (Setting)
+	CreateThread(NULL, 0, HWNDDetect, NULL, 0, NULL);
 	
 	//Message Loop
 	MSG msg = {};

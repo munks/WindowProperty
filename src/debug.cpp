@@ -86,6 +86,10 @@ void Debug_PrintWindowExStyle (int _ws) {
 }
 
 void Debug_ConvertWindowMessage (UINT lp_msg) {
+	#ifdef _RESTRICT_WM
+	return;
+	#endif
+	
 	switch (lp_msg) {
 		PrintWindowMessage(WM_NULL);
 		PrintWindowMessage(WM_CREATE);
