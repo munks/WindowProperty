@@ -267,7 +267,7 @@ void Control_SetChangeText (HWND hwnd, HWND capture) {
 	SetButtonText(capture, wda, CAPTURE);
 }
 
-void Control_PropDialogInit (HWND hwnd, LONG_PTR style[], LONG_PTR exstyle[], bool exclude, LPCWSTR add, LPCWSTR add2) {
+void Control_PropDialogInit (HWND hwnd, LONG_PTR style[], LONG_PTR exstyle[], bool exclude, LPCWSTR add, LPCWSTR add2, bool rt) {
 	HWND tmphwnd;
 	LONG_PTR prop;
 	
@@ -276,16 +276,10 @@ void Control_PropDialogInit (HWND hwnd, LONG_PTR style[], LONG_PTR exstyle[], bo
 	SetWindowText(GetDlgItem(hwnd, ID_STATIC_STYLE), DLG_PROP_LINK_STYLE);
 	SetWindowText(GetDlgItem(hwnd, ID_STATIC_EXSTYLE), DLG_PROP_LINK_EXSTYLE);
 	
-	if (add != NULL) {
-		SetWindowText(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD), add);
-	} else {
-		ShowWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD), SW_HIDE);
-	}
-	if (add2 != NULL) {
-		SetWindowText(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), add2);
-	} else {
-		ShowWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), SW_HIDE);
-	}
+	add ? SetWindowText(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD), add) : ShowWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD), SW_HIDE);
+	add2 ? SetWindowText(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), add2) : ShowWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), SW_HIDE);
+	rt ? SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), DLG_PROP_TIME) : ShowWindow(GetDlgItem(hwnd, ID_STATIC_TIME), SW_HIDE);
+	
 	SetWindowText(GetDlgItem(hwnd, ID_BUTTON_PROP_CONFIRM), DLG_PROP_CONFIRM);
 	SetWindowText(GetDlgItem(hwnd, ID_BUTTON_PROP_CANCEL), DLG_PROP_CANCEL);
 	

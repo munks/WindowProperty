@@ -5,16 +5,72 @@
 wchar_t p_caption[MAX_PATH];
 LONG_PTR p_currentProp[2];
 HWND p_currentHwnd;
+FILETIME p_createtime;
 
 //Internal
 
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
 
+void DateOperate (FILETIME* src, FILETIME* target) {
+	ULARGE_INTEGER tmp[2];
+	
+	tmp[0].LowPart = src->dwLowDateTime;
+	tmp[0].HighPart = src->dwHighDateTime;
+	tmp[1].LowPart = target->dwLowDateTime;
+	tmp[1].HighPart = target->dwHighDateTime;
+	
+	tmp[0].QuadPart -= tmp[1].QuadPart;
+	
+	src->dwLowDateTime = tmp[0].LowPart;
+	src->dwHighDateTime = tmp[0].HighPart;
+}
+
+void FileTimeToTime (FILETIME* src, SYSTEMTIME* target) {
+	int sec;
+	int milsec;
+	int min;
+	int hour;
+	
+	sec = src->dwHighDateTime * 430;
+	sec += src->dwLowDateTime / (1000 * 10000);
+	milsec = (src->dwLowDateTime % (1000 * 10000)) / 10000;
+	min = sec / 60;
+	sec %= 60;
+	hour = min / 60;
+	min %= 60;
+	
+	target->wMilliseconds = milsec;
+	target->wSecond = sec;
+	target->wMinute = min;
+	target->wHour = hour;
+}
+
+DWORD WINAPI SystemTimeLoop (LPVOID param) {
+	SYSTEMTIME stCurrent;
+	FILETIME ftCurrent;
+	SYSTEMTIME calctime;
+	HWND hwnd = (HWND)param;
+	wchar_t timetext[260];
+	
+	while (p_currentHwnd) {
+		GetSystemTime(&stCurrent);
+		SystemTimeToFileTime(&stCurrent, &ftCurrent);
+		DateOperate(&ftCurrent, &p_createtime);
+		FileTimeToTime(&ftCurrent, &calctime);
+		swprintf(timetext, DLG_PROP_TIME, calctime.wHour, calctime.wMinute, calctime.wSecond, calctime.wMilliseconds);
+		SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), timetext);
+		Sleep(16);
+	}
+	
+	return 0;
+}
 LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 	LONG_PTR tmpProp[2];
 	wchar_t cls[256];
 	HKEY key;
+	HANDLE handle;
+	FILETIME ft[4];
 	
 	#ifdef _DEBUG
 	Debug_ConvertWindowMessage(uMsg);
@@ -23,7 +79,7 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_INITDIALOG) {
 			//Set Style Button
-			Control_PropDialogInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, DLG_PROP_ADD_PROP, DLG_PROP_ADD2_PROP);
+			Control_PropDialogInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, DLG_PROP_ADD_PROP, DLG_PROP_ADD2_PROP, true);
 			
 			GetClassName(p_currentHwnd, cls, 256);
 			if (RegOpenKeyEx(m_regset, cls, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
@@ -31,6 +87,13 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			} else {
 				RegCloseKey(key);
 			}
+			
+			handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Util_GetProcessID(p_currentHwnd));
+			GetProcessTimes(handle, &p_createtime, &ft[0], &ft[1], &ft[2]);
+			CloseHandle(handle);
+			
+			CreateThread(NULL, 0, SystemTimeLoop, hwnd, 0, NULL);
+			
 			return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
 		WindowEvent(WM_LBUTTONDOWN) {
@@ -251,6 +314,8 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 		
 		Log_Message(LOG_SET_PROP, name);
 	}
+	
+	p_currentHwnd = NULL;
 }
 
 void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
