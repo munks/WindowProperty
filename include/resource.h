@@ -41,6 +41,7 @@
 #define ID_STATIC_EXSTYLE		303
 #define ID_STATIC_HK_MA			304
 #define ID_STATIC_HK_CC			305
+#define ID_STATIC_TIME			306
 
 #define PROP_BUTTON				400
 #define ID_BUTTON_STL_TM		(PROP_BUTTON + 16)

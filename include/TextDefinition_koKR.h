@@ -108,3 +108,4 @@
 #define DLG_PROP_ADD2_FILTER		L"초기화"
 #define DLG_PROP_CONFIRM			L"확인"
 #define DLG_PROP_CANCEL				L"취소"
+#define DLG_PROP_TIME				L"런타임: %d시간 %d분 %d초 %03d"

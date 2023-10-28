@@ -33,7 +33,7 @@ LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_INITDIALOG) {
 			//Set Style Button
-			Control_PropDialogInit(hwnd, u_filter[0], u_filter[1], true, NULL, DLG_PROP_ADD2_FILTER);
+			Control_PropDialogInit(hwnd, u_filter[0], u_filter[1], true, NULL, DLG_PROP_ADD2_FILTER, false);
 			
 			return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
@@ -156,17 +156,25 @@ DWORD WINAPI HWNDDetect (LPVOID param) {
 	HWND hwnd;
 	
 	while (true) {
-		//Search Register - HKEY_CURRENT_USER\SOFTWARE\Valve\Steam\Apps
+		//Search Registry
 		while (RegEnumKeyEx(m_regset, idx++, name, &len, NULL, NULL, NULL, NULL) != ERROR_NO_MORE_ITEMS) {
+			//Search HWND
 			if (hwnd = GetAncestor(FindWindow(name, NULL), GA_ROOTOWNER)) {
-				size[0] = sizeof(style[0]);
-				size[1] = sizeof(style[1]);
-				if ((RegGetValue(m_regset, name, L"Style", RRF_RT_DWORD, NULL, &style[0], &size[0]) == ERROR_SUCCESS) &&
-					(RegGetValue(m_regset, name, L"ExStyle", RRF_RT_DWORD, NULL, &style[1], &size[1]) == ERROR_SUCCESS)) {
-					SetWindowLongPtr(hwnd, GWL_STYLE, style[0]);
-					SetWindowLongPtr(hwnd, GWL_EXSTYLE, style[1]);
-					SetWindowPos(hwnd, style[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
-								0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+				//Not Maximized
+				if (!IsMaximized(hwnd)) {
+					size[0] = sizeof(style[0]);
+					size[1] = sizeof(style[1]);
+					if ((RegGetValue(m_regset, name, L"Style", RRF_RT_DWORD, NULL, &style[0], &size[0]) == ERROR_SUCCESS) &&
+						(RegGetValue(m_regset, name, L"ExStyle", RRF_RT_DWORD, NULL, &style[1], &size[1]) == ERROR_SUCCESS)) {
+						if ((GetWindowLongPtr(hwnd, GWL_STYLE) != style[0]) ||
+							(GetWindowLongPtr(hwnd, GWL_EXSTYLE) != style[1])) {
+							//Set Window Properties - If not same
+							SetWindowLongPtr(hwnd, GWL_STYLE, style[0]);
+							SetWindowLongPtr(hwnd, GWL_EXSTYLE, style[1]);
+							SetWindowPos(hwnd, style[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
+										0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+						}
+					}
 				}
 			}
 			len = 256;

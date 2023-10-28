@@ -108,3 +108,4 @@
 #define DLG_PROP_ADD2_FILTER		L"Reset"
 #define DLG_PROP_CONFIRM			L"Confirm"
 #define DLG_PROP_CANCEL				L"Cancel"
+#define DLG_PROP_TIME				L"Runtime: %dh %dm %ds %03d"
