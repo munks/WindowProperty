@@ -171,8 +171,9 @@ DWORD WINAPI HWNDDetect (LPVOID param) {
 							//Set Window Properties - If not same
 							SetWindowLongPtr(hwnd, GWL_STYLE, style[0]);
 							SetWindowLongPtr(hwnd, GWL_EXSTYLE, style[1]);
+							//Set TOPMOST | VISIBLE
 							SetWindowPos(hwnd, style[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
-										0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+										 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 						}
 					}
 				}

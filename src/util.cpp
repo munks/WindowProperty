@@ -158,7 +158,8 @@ void Util_SettingConfig (LONG_PTR* prop, HWND hwnd, bool add) {
 		RegSetValueEx(key, L"Style", 0, REG_DWORD, (BYTE*)&prop[0], sizeof(DWORD));
 		RegSetValueEx(key, L"ExStyle", 0, REG_DWORD, (BYTE*)&prop[1], sizeof(DWORD));
 	} else {
-		RegDeleteTree(key, NULL);
+		RegDeleteTree(m_regset, name);
+		RegDeleteKey(m_regset, name);
 	}
 	
 	RegCloseKey(key);

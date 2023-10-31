@@ -109,3 +109,4 @@
 #define DLG_PROP_CONFIRM			L"Confirm"
 #define DLG_PROP_CANCEL				L"Cancel"
 #define DLG_PROP_TIME				L"Runtime: %dh %dm %ds %03d"
+#define DLG_PROP_TIME_ACC_DENIED	L"Runtime: Unable to load because access denied."

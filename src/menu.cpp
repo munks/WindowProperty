@@ -9,7 +9,7 @@ MENUITEMINFO me_mi = {sizeof(MENUITEMINFO), 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0};
 NOTIFYICONDATA me_nid = {sizeof(NOTIFYICONDATA), NULL, 0, 0, WM_ICONNOTIFY, NULL, WINDOW_MAIN_NAME,
 						0, 0, {0}, 0, {0}, 0, me_guid, NULL};
 int me_infoCnt = 0;
-INFODATA me_param;
+UINT_PTR me_timer = 0;
 
 //Internal
 
@@ -30,32 +30,13 @@ void SetStartup (BOOL add) {
 	RegCloseKey(tmpkey);
 }
 
-DWORD WINAPI InfoNotifyIcon_Internal (LPVOID param) {
-	//Init
-	me_infoCnt++;
-	me_nid.uFlags = NIF_INFO | NIF_GUID;
-	me_nid.dwInfoFlags = NIIF_INFO | NIIF_NOSOUND;
-	
+void Menu_DeleteNotifyIcon (HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
 	//Remove Info
 	ZeroMemory(me_nid.szInfo, sizeof(me_nid.szInfo));
 	Shell_NotifyIcon(NIM_MODIFY, &me_nid);
 	
-	//Add Info
-	wcscpy(me_nid.szInfoTitle, me_param.title);
-	wcscpy(me_nid.szInfo, me_param.info);
-	
-	Shell_NotifyIcon(NIM_MODIFY, &me_nid);
-	
-	//Wait
-	Sleep(me_param.len);
-	
-	//Remove Info (If there is no other info)
-	me_infoCnt--;
-	if (!me_infoCnt) {
-		ZeroMemory(me_nid.szInfo, sizeof(me_nid.szInfo));
-		Shell_NotifyIcon(NIM_MODIFY, &me_nid);
-	}
-	return 0;
+	KillTimer(NULL, me_timer);
+	me_timer = 0;
 }
 
 //External
@@ -135,10 +116,22 @@ void Menu_RemoveNotifyIcon () {
 }
 
 void Menu_InfoNotifyIcon (LPCWSTR title, LPCWSTR info, int len) {
-	me_param.title = title;
-	me_param.info = info;
-	me_param.len = len;
-	CreateThread(NULL, 0, InfoNotifyIcon_Internal, NULL, 0, NULL);
+	//Init
+	me_infoCnt++;
+	me_nid.uFlags = NIF_INFO | NIF_GUID;
+	me_nid.dwInfoFlags = NIIF_INFO | NIIF_NOSOUND;
+	
+	//Add Info
+	wcscpy(me_nid.szInfoTitle, title);
+	wcscpy(me_nid.szInfo, info);
+	
+	Shell_NotifyIcon(NIM_MODIFY, &me_nid);
+	
+	//Wait
+	if (me_timer) {
+		KillTimer(NULL, me_timer);
+	}
+	me_timer = SetTimer(NULL, NOTIFY_DELETE, len, Menu_DeleteNotifyIcon);
 }
 
 void Menu_MakeMenu () {

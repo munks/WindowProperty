@@ -109,3 +109,4 @@
 #define DLG_PROP_CONFIRM			L"확인"
 #define DLG_PROP_CANCEL				L"취소"
 #define DLG_PROP_TIME				L"런타임: %d시간 %d분 %d초 %03d"
+#define DLG_PROP_TIME_ACC_DENIED	L"런타임: 액세스가 거부되어 불러올 수 없습니다."
