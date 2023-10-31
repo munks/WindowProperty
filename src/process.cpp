@@ -9,7 +9,7 @@ FILETIME p_createtime;
 
 //Internal
 
-#define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
+#define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
 
 void DateOperate (FILETIME* src, FILETIME* target) {
 	ULARGE_INTEGER tmp[2];
@@ -46,20 +46,18 @@ void FileTimeToTime (FILETIME* src, SYSTEMTIME* target) {
 }
 
 DWORD WINAPI SystemTimeLoop (LPVOID param) {
-	SYSTEMTIME stCurrent;
 	FILETIME ftCurrent;
 	SYSTEMTIME calctime;
 	HWND hwnd = (HWND)param;
 	wchar_t timetext[260];
 	
 	while (p_currentHwnd) {
-		GetSystemTime(&stCurrent);
-		SystemTimeToFileTime(&stCurrent, &ftCurrent);
+		GetSystemTimeAsFileTime(&ftCurrent);
 		DateOperate(&ftCurrent, &p_createtime);
 		FileTimeToTime(&ftCurrent, &calctime);
 		swprintf(timetext, DLG_PROP_TIME, calctime.wHour, calctime.wMinute, calctime.wSecond, calctime.wMilliseconds);
 		SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), timetext);
-		Sleep(16);
+		Sleep(125);
 	}
 	
 	return 0;
@@ -88,11 +86,15 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				RegCloseKey(key);
 			}
 			
-			handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Util_GetProcessID(p_currentHwnd));
-			GetProcessTimes(handle, &p_createtime, &ft[0], &ft[1], &ft[2]);
-			CloseHandle(handle);
-			
-			CreateThread(NULL, 0, SystemTimeLoop, hwnd, 0, NULL);
+			handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(p_currentHwnd));
+			if (handle) {
+				GetProcessTimes(handle, &p_createtime, &ft[0], &ft[1], &ft[2]);
+				CloseHandle(handle);
+				
+				CreateThread(NULL, 0, SystemTimeLoop, hwnd, 0, NULL);
+			} else {
+				SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), DLG_PROP_TIME_ACC_DENIED);
+			}
 			
 			return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
@@ -305,14 +307,16 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	p_currentHwnd = hwnd;
 	
 	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), GetAncestor(ctrl, GA_PARENT), PropProc)) {
-		//Set Window Properties
-		SetWindowLongPtr(hwnd, GWL_STYLE, p_currentProp[0]);
-		SetWindowLongPtr(hwnd, GWL_EXSTYLE, p_currentProp[1]);
-		//Set TOPMOST (It does not apply with SetWindowLongPtr)
-		SetWindowPos(hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
-					0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
-		
-		Log_Message(LOG_SET_PROP, name);
+		if (IsWindow(hwnd)) {
+			//Set Window Properties
+			SetWindowLongPtr(hwnd, GWL_STYLE, p_currentProp[0]);
+			SetWindowLongPtr(hwnd, GWL_EXSTYLE, p_currentProp[1]);
+			//Set TOPMOST
+			SetWindowPos(hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
+						0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+			
+			Log_Message(LOG_SET_PROP, name);
+		}
 	}
 	
 	p_currentHwnd = NULL;
@@ -385,7 +389,12 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	
 	pid = Util_GetProcessID(hwnd);
 	
-	handle = OpenProcess(PROCESS_ALL_ACCESS, false, pid);
+	handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+	if (!handle) {
+		Util_PrintWindowsLastError();
+		return;
+	}
+	
 	IsWow64Process(handle, &iswow64);
 	CloseHandle(handle);
 	
@@ -434,7 +443,12 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	
 	pid = Util_GetProcessID(hwnd);
 	
-	handle = OpenProcess(PROCESS_QUERY_INFORMATION, false, pid);
+	handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+	if (!handle) {
+		Util_PrintWindowsLastError();
+		return;
+	}
+	
 	QueryFullProcessImageName(handle, 0, path, &cnt);
 	*wcsrchr(path, '\\') = '\0';
 	CloseHandle(handle);
