@@ -18,7 +18,7 @@ bool CheckErrorFunc (void* checkVar, LPCSTR file, int line, LPCSTR targetValName
 	return true;
 }
 
-wchar_t* GetHotkeyString (DWORD hotkey) {
+wchar_t* Util_GetHotkeyString (DWORD hotkey) {
 	static wchar_t str[20];
 	
 	switch (hotkey) {
@@ -35,7 +35,7 @@ wchar_t* GetHotkeyString (DWORD hotkey) {
 	return str;
 }
 
-void SetHotkeyText (DWORD hotkey, DWORD vk) {
+void Util_SetHotkeyText (DWORD hotkey, DWORD vk) {
 	switch (hotkey) {
 		case HOTKEY_MOVE:
 			SetWindowText(GetDlgItem(h_window, ID_STATIC_HK_MA), VirtualKeyCodeText(vk));
@@ -82,7 +82,9 @@ bool operator!=(RECT src, RECT cmp) {
 
 ULONG Util_GetProcessID (HWND hwnd) {
 	ULONG idProc;
+	
 	GetWindowThreadProcessId(hwnd, &idProc);
+	
 	return idProc;
 }
 
@@ -113,54 +115,79 @@ DWORD Util_GetHotkey (DWORD hotkey) {
 	DWORD size = 4;
 	LSTATUS result;
 	
-	result = RegGetValue(m_regkey, NULL, GetHotkeyString(hotkey), RRF_RT_DWORD, NULL, &tmp, &size);
+	result = RegGetValue(m_regkey, NULL, Util_GetHotkeyString(hotkey), RRF_RT_DWORD, NULL, &tmp, &size);
 	rtn = result ? 0 : tmp;
 	
-	SetHotkeyText(hotkey, rtn);
+	Util_SetHotkeyText(hotkey, rtn);
 	
 	return rtn;
 }
 
 LSTATUS Util_SetHotkey (DWORD hotkey, DWORD vk) {
-	wchar_t* keystr = GetHotkeyString(hotkey);
+	wchar_t* keystr = Util_GetHotkeyString(hotkey);
 	
 	if (keystr == NULL) {
 		return ERROR_INVALID_DATA;
 	}
 	
-	SetHotkeyText(hotkey, vk);
+	Util_SetHotkeyText(hotkey, vk);
 	
 	return RegSetValueEx(m_regkey, keystr, 0, REG_DWORD, (BYTE*)&vk, sizeof(DWORD));
 }
 
 void Util_PrintWindowsLastError () {
-	LPTSTR msg;
+	LPWSTR msg;
 	
 	FormatMessage(	FORMAT_MESSAGE_ALLOCATE_BUFFER |
 					FORMAT_MESSAGE_FROM_SYSTEM | 
 					FORMAT_MESSAGE_IGNORE_INSERTS,
 					NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					(LPTSTR)&msg, 0, NULL);
+					(LPWSTR)&msg, 0, NULL);
 	
-	MessageBox(NULL, msg, TEXT("GetLastError"), MB_OK);
+	MessageBox(NULL, msg, L"GetLastError", MB_OK);
 	
 	LocalFree(msg);
 }
 
 void Util_SettingConfig (LONG_PTR* prop, HWND hwnd, bool add) {
-	wchar_t name[256];
+	wchar_t str[256], *exe;
+	DWORD len;
 	HKEY key;
+	HANDLE handle;
 	
-	GetClassName(hwnd, name, 256);
-	RegCreateKeyEx(m_regset, name, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
+	handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(hwnd));
+    QueryFullProcessImageName(handle, 0, str, &(len = 256));
+    CloseHandle(handle);
+	
+	exe = wcsrchr(str, L'\\') + 1;
+	GetClassName(hwnd, str, 256);
+	
+	RegCreateKeyEx(m_regset, exe, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
 	
 	if (add) {
 		RegSetValueEx(key, L"Style", 0, REG_DWORD, (BYTE*)&prop[0], sizeof(DWORD));
 		RegSetValueEx(key, L"ExStyle", 0, REG_DWORD, (BYTE*)&prop[1], sizeof(DWORD));
+		RegSetValueEx(key, L"Class", 0, REG_SZ, (BYTE*)&str, wcslen(str) * sizeof(wchar_t));
 	} else {
-		RegDeleteTree(m_regset, name);
-		RegDeleteKey(m_regset, name);
+		RegDeleteTree(m_regset, exe);
+		RegDeleteKey(m_regset, exe);
 	}
 	
 	RegCloseKey(key);
+	
+	while (m_loopStop) {
+		Sleep(500);
+	}
+	m_loopStop = true;
+}
+
+void Util_PrintInt (int i) {
+	char txt[260];
+	
+	sprintf(txt, "%d", i);
+	MessageBoxA(NULL, txt, "Num.", MB_OK);
+}
+
+void Util_PrintString (const wchar_t* str) {
+	MessageBox(NULL, str, L"Str.", MB_OK);
 }

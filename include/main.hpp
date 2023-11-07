@@ -24,3 +24,10 @@ extern HINSTANCE m_hInstance;
 extern HFONT m_font;
 extern HKEY m_regkey;
 extern HKEY m_regset;
+extern bool m_loopStop;
+
+typedef struct HDATA {
+	wchar_t** name;
+	wchar_t** cls;
+	DWORD total;
+} HDATA;

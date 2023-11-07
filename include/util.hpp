@@ -10,5 +10,7 @@ void Util_PrintWindowsLastError ();
 void Util_SettingConfig (LONG_PTR*, HWND, bool);
 bool operator==(RECT, RECT);
 bool operator!=(RECT, RECT);
+void Util_PrintInt (int);
+void Util_PrintString (const wchar_t*);
 
 extern LONG_PTR u_filter[2][2];

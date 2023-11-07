@@ -61,9 +61,7 @@ process.cpp - p_#Var
 	} ProcessLoopEnd();
 */
 #define ProcessLoop { \
-							HANDLE lt_hProcess = CreateToolhelp32Snapshot( \
-												TH32CS_SNAPPROCESS | TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, 0); \
-							MODULEENTRY32W lt_me32 = {0}; \
+							HANDLE lt_hProcess = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); \
 							PROCESSENTRY32W lt_pe32 = {0}; \
 							lt_pe32.dwSize = sizeof(PROCESSENTRY32W); \
 							if(Process32FirstW(lt_hProcess, &lt_pe32)) { \

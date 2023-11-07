@@ -6,7 +6,7 @@ wchar_t p_caption[MAX_PATH];
 LONG_PTR p_currentProp[2];
 HWND p_currentHwnd;
 FILETIME p_createtime;
-
+wchar_t p_exeFile[30];
 //Internal
 
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
@@ -66,6 +66,8 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 	LONG_PTR tmpProp[2];
 	wchar_t cls[256];
+	wchar_t val[256];
+	DWORD len;
 	HKEY key;
 	HANDLE handle;
 	FILETIME ft[4];
@@ -80,11 +82,24 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			Control_PropDialogInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, DLG_PROP_ADD_PROP, DLG_PROP_ADD2_PROP, true);
 			
 			GetClassName(p_currentHwnd, cls, 256);
-			if (RegOpenKeyEx(m_regset, cls, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
+			if (RegOpenKeyEx(m_regset, p_exeFile, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
 				EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
-			} else {
+				goto BUTTONEND;
+			}
+			
+			if (RegGetValue(m_regset, p_exeFile, L"Class", RRF_RT_REG_SZ, NULL, &val, &(len = 256)) != ERROR_SUCCESS) {
+				EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
+				Util_SettingConfig(NULL, p_currentHwnd, false);
+				RegCloseKey(key);
+				goto BUTTONEND;
+			}
+			
+			if (wcscmp(val, cls) != 0) {
+				EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
 				RegCloseKey(key);
 			}
+			
+			BUTTONEND:
 			
 			handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(p_currentHwnd));
 			if (handle) {
@@ -305,8 +320,9 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	p_currentProp[0] = GetWindowLongPtr(hwnd, GWL_STYLE);
 	p_currentProp[1] = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
 	p_currentHwnd = hwnd;
+	ListView_GetItemText(GetDlgItem(m_main, ID_LIST), c_listViewIndex, 0, p_exeFile, 30);
 	
-	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), GetAncestor(ctrl, GA_PARENT), PropProc)) {
+	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), m_main, PropProc)) {
 		if (IsWindow(hwnd)) {
 			//Set Window Properties
 			SetWindowLongPtr(hwnd, GWL_STYLE, p_currentProp[0]);
@@ -325,7 +341,7 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	GetWindowText(hwnd, p_caption, MAX_PATH);
 	
-	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_NAME), GetAncestor(ctrl, GA_PARENT), NameProc)) {
+	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_NAME), m_main, NameProc)) {
 		SetWindowText(hwnd, p_caption);
 		
 		Log_Message(LOG_CHANGE_CAPTION, name);
@@ -337,7 +353,7 @@ void Process_WindowOpacityChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	BYTE alpha;
 	LONG exstyle;
 	
-	percent = GetDlgItemInt(GetAncestor(ctrl, GA_PARENT), ID_EDIT_ALPHA, NULL, false);
+	percent = GetDlgItemInt(m_main, ID_EDIT_ALPHA, NULL, false);
 	alpha = (BYTE)(((double)percent) / 100.0 * 255.0);
 	exstyle = GetWindowExStyle(hwnd);
 	
@@ -418,7 +434,7 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 			break;
 	}
 	RegSetValueEx(m_regkey, L"LastHook", 0, REG_BINARY, &val, sizeof(BYTE));
-	err = (INT_PTR)ExecuteFromAbsolutePath(GetAncestor(ctrl, GA_PARENT), exe, dll, pid);
+	err = (INT_PTR)ExecuteFromAbsolutePath(m_main, exe, dll, pid);
 	if (err > 32) {
 		switch (GetDlgCtrlID(ctrl)) {
 			case ID_BUTTON_CMD: {
@@ -453,7 +469,7 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	*wcsrchr(path, '\\') = '\0';
 	CloseHandle(handle);
 	
-	ShellExecute(GetAncestor(ctrl, GA_PARENT), L"open", path, NULL, NULL, SW_SHOW);
+	ShellExecute(m_main, L"open", path, NULL, NULL, SW_SHOW);
 	
 	Log_Message(LOG_OPEN_DIRECTORY, name);
 }

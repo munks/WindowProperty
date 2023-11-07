@@ -8,9 +8,9 @@ HINSTANCE m_hInstance;
 HFONT m_font;
 HKEY m_regkey;
 HKEY m_regset;
+bool m_loopStop;
 
-//Function
-#define CreateButtonMacro(h, id, cb, x, y, cx, cy) Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, cb, x, y, cx, cy, ID_BUTTON_##id)
+//External
 
 void Main_Close () {
 	DestroyMenu(me_menu);
@@ -20,6 +20,36 @@ void Main_Close () {
 	Menu_RemoveNotifyIcon();
 	FreeLibrary(c_comctlModule);
 	PostQuitMessage(0);
+}
+
+//Internal
+#define CreateButtonMacro(h, id, cb, x, y, cx, cy) Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, cb, x, y, cx, cy, ID_BUTTON_##id)
+
+void Main_DeleteRegistryVer0() {
+	int idx = 0;
+	DWORD len;
+	wchar_t key[256];
+	
+	
+	while (RegEnumKeyEx(m_regset, idx, key, &(len = 256), NULL, NULL, NULL, NULL) == ERROR_SUCCESS) {
+		RegDeleteTree(m_regset, key);
+		RegDeleteKey(m_regset, key);
+	}
+}
+
+void Main_VersionCheck (DWORD ver) {
+	DWORD reg, size;
+	
+	RegGetValue(m_regkey, NULL, L"Version", RRF_RT_REG_DWORD, NULL, &(reg = 0), &(size = sizeof(DWORD)));
+	
+	switch (reg) {
+		case 0: Main_DeleteRegistryVer0();
+		case 1:
+		case 2:
+		case 3: break;
+	}
+	
+	RegSetValueEx(m_regkey, L"Version", 0, REG_DWORD, (BYTE*)&ver, sizeof(DWORD));
 }
 
 LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -149,40 +179,96 @@ LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-DWORD WINAPI HWNDDetect (LPVOID param) {
-	DWORD idx = 0, len = 256, size[2];
-	wchar_t name[256];
-	DWORD style[2];
-	HWND hwnd;
+BOOL CALLBACK HWNDDetectInternal (HWND hwnd, LPARAM lParam) {
+	HDATA* data = (HDATA*)lParam;
+    HANDLE handle;
+	wchar_t str[260], exe[260];
+	DWORD len, style[2];
 	
-	while (true) {
-		//Search Registry
-		while (RegEnumKeyEx(m_regset, idx++, name, &len, NULL, NULL, NULL, NULL) != ERROR_NO_MORE_ITEMS) {
-			//Search HWND
-			if (hwnd = GetAncestor(FindWindow(name, NULL), GA_ROOTOWNER)) {
-				//Not Maximized
-				if (!IsMaximized(hwnd)) {
-					size[0] = sizeof(style[0]);
-					size[1] = sizeof(style[1]);
-					if ((RegGetValue(m_regset, name, L"Style", RRF_RT_DWORD, NULL, &style[0], &size[0]) == ERROR_SUCCESS) &&
-						(RegGetValue(m_regset, name, L"ExStyle", RRF_RT_DWORD, NULL, &style[1], &size[1]) == ERROR_SUCCESS)) {
-						if ((GetWindowLongPtr(hwnd, GWL_STYLE) != style[0]) ||
-							(GetWindowLongPtr(hwnd, GWL_EXSTYLE) != style[1])) {
-							//Set Window Properties - If not same
-							SetWindowLongPtr(hwnd, GWL_STYLE, style[0]);
-							SetWindowLongPtr(hwnd, GWL_EXSTYLE, style[1]);
-							//Set TOPMOST | VISIBLE
-							SetWindowPos(hwnd, style[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
-										 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
-						}
-					}
-				}
+	if (GetParent(hwnd) != NULL) { return TRUE; }
+	
+	handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(hwnd));
+    QueryFullProcessImageName(handle, 0, str, &(len = 260));
+    CloseHandle(handle);
+	
+	if (wcsrchr(str, L'\\') == NULL) { return TRUE; }
+	
+	wcscpy(exe, wcsrchr(str, L'\\') + 1);
+	GetClassName(hwnd, str, 260);
+	
+	for (int i = 0; i < data->total; i++) {
+		if (wcscmp(exe, data->name[i]) != 0) { continue; }
+		if (wcscmp(str, data->cls[i]) != 0) { continue; }
+		if ((RegGetValue(m_regset, data->name[i], L"Style", RRF_RT_DWORD, NULL, &style[0], &(len = sizeof(DWORD))) == ERROR_SUCCESS) &&
+			(RegGetValue(m_regset, data->name[i], L"ExStyle", RRF_RT_DWORD, NULL, &style[1], &(len = sizeof(DWORD))) == ERROR_SUCCESS)) {
+			if ((GetWindowLongPtr(hwnd, GWL_STYLE) != style[0]) ||
+				(GetWindowLongPtr(hwnd, GWL_EXSTYLE) != style[1])) {
+				puts("Style Change Complete\n");
+				//Set Window Properties - If not same
+				SetWindowLongPtr(hwnd, GWL_STYLE, style[0]);
+				SetWindowLongPtr(hwnd, GWL_EXSTYLE, style[1]);
+				//Set TOPMOST | VISIBLE
+				SetWindowPos(hwnd, style[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
+							 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 			}
-			len = 256;
 		}
-		idx = 0;
+		return TRUE;
+	}
+	
+	return TRUE;
+}
+
+DWORD WINAPI HWNDDetect (LPVOID param) {
+	HDATA data;
+	DWORD len;
+	wchar_t tmpname[256], tmpcls[256];
+	bool wait;
+	
+	//Begin
+	BEGIN:
+	wait = false;
+	
+	//Search Registry / Allocate data
+	RegQueryInfoKey(m_regset, NULL, NULL, NULL, &data.total, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	if (data.total <= 0) { wait = true; goto LOOP; } //if key is none
+	data.name = new wchar_t*[data.total];
+	data.cls = new wchar_t*[data.total];
+	
+	for (int i = 0; i < data.total; i++) {
+		if (RegEnumKeyEx(m_regset, i, tmpname, &(len = 256), NULL, NULL, NULL, NULL) == ERROR_SUCCESS) {
+			data.name[i] = new wchar_t[len + 1];
+			wcscpy(data.name[i], tmpname);
+		} else {
+			data.name[i] = NULL;
+			continue;
+		}
+		if (RegGetValue(m_regset, tmpname, L"Class", RRF_RT_REG_SZ, NULL, &tmpcls, &(len = 256)) == ERROR_SUCCESS) {
+			data.cls[i] = new wchar_t[len + 1];
+			wcscpy(data.cls[i], tmpcls);
+		} else {
+			data.cls[i] = NULL;
+		}
+	}
+	
+	//Loop
+	LOOP:
+	m_loopStop = false;
+	while (!m_loopStop) {
+		if (!wait) { EnumWindows(HWNDDetectInternal, (LPARAM)&data); }
 		Sleep(500);
 	}
+	
+	//Release
+	if (!wait) {
+		for (int i = 0; i < data.total; i++) {
+			if (data.name[i] != NULL) { delete data.name[i]; }
+			if (data.cls[i] != NULL) { delete data.cls[i]; }
+		}
+		delete data.name;
+		delete data.cls;
+	}
+	
+	goto BEGIN;
 	
 	return 0;
 }
@@ -225,19 +311,28 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				if (ListViewMessage() == NM_CUSTOMDRAW) {
 					LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
 					wchar_t cls[256];
+					wchar_t val[256];
+					DWORD len;
 					HKEY key;
 					
 					switch (lplvcd->nmcd.dwDrawStage) {
 						case CDDS_PREPAINT: return CDRF_NOTIFYITEMDRAW;
 						case CDDS_ITEMPREPAINT: {
+							ListView_GetItemText(lplvcd->nmcd.hdr.hwndFrom, lplvcd->nmcd.dwItemSpec, 0, name, 30);
 							ListView_GetItemText(lplvcd->nmcd.hdr.hwndFrom, lplvcd->nmcd.dwItemSpec, 3, pidhwnd, 10);
 							tmphwnd = (HWND)_wtoi(pidhwnd);
 							
 							GetClassName(tmphwnd, cls, 256);
-							if (RegOpenKeyEx(m_regset, cls, 0, KEY_ALL_ACCESS, &key) == ERROR_SUCCESS) {
-								lplvcd->clrText = RGB(255,0,0);
-								RegCloseKey(key);
+							if (RegOpenKeyEx(m_regset, name, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
+								break;
 							}
+							
+							if (RegGetValue(m_regset, name, L"Class", RRF_RT_REG_SZ, NULL, &val, &(len = 256)) == ERROR_SUCCESS) {
+								if (wcscmp(val, cls) == 0) {
+									lplvcd->clrText = RGB(255,0,0);
+								}
+							}
+							RegCloseKey(key);
 							break;
 						}
 					}
@@ -429,6 +524,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Duality\\WindowProperty", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regkey, NULL);
 	RegCreateKeyEx(m_regkey, L"Settings", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regset, NULL);
 	
+	Main_VersionCheck(1);
+	
 	//Set Global Variables
 	m_hInstance = hInstance;
 	m_hbrush = CreateSolidBrush(RGB(240,240,240));
@@ -520,15 +617,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	Menu_MakeMenu();
 	
 	//Get Registry (MOVE)
-	size = sizeof(BYTE);
-	
-	RegGetValue(m_regkey, NULL, L"MoveActive", RRF_RT_REG_BINARY, NULL, &regval, &size);
+	RegGetValue(m_regkey, NULL, L"MoveActive", RRF_RT_REG_BINARY, NULL, &regval, &(size = sizeof(BYTE)));
 	Hook_MoveHotkeyRegister(regval);
 	
 	//Get Registry (CLIP)
-	size = sizeof(BYTE);
-	
-	RegGetValue(m_regkey, NULL, L"CursorActive", RRF_RT_REG_BINARY, NULL, &regval, &size);
+	RegGetValue(m_regkey, NULL, L"CursorActive", RRF_RT_REG_BINARY, NULL, &regval, &(size = sizeof(BYTE)));
 	Hook_ClipHotkeyRegister(regval);
 	
 	//Get Registry (INIT)
