@@ -290,13 +290,13 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_NOTIFY) {
-			//Prevent List-View Header Control
-			if (ListViewMessage() == HDN_BEGINTRACK)
-			if (ListViewMessage() == HDN_ITEMCHANGING) {
-				return true;
-			}
-			if (EventDialog() == ID_LIST) {
-				if (ListViewMessage() == LVN_ITEMCHANGED) {
+			NotifyEventCase(ListViewMessage()) {
+				NotifyEvent(HDN_BEGINTRACK)
+				NotifyEvent(HDN_ITEMCHANGING) {
+					//Prevent List-View Header Control
+					return true;
+				}
+				NotifyEvent(LVN_ITEMCHANGED) {
 					//Set Selected Specific Value
 					c_listViewIndex = ListView_GetNextItem(ListViewDialog(), -1, LVNI_FOCUSED | LVNI_SELECTED);
 					ListView_GetItemText(ListViewDialog(), c_listViewIndex, 3, pidhwnd, 10);
@@ -307,8 +307,9 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 					Control_SetChangeText(tmphwnd, GetDlgItem(hwnd, ID_BUTTON_CAPTURE));
 					swprintf(text, L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
 					SetDlgItemText(hwnd, ID_EDIT_ALPHA, text);
+					break;
 				}
-				if (ListViewMessage() == NM_CUSTOMDRAW) {
+				NotifyEvent(NM_CUSTOMDRAW) {
 					LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
 					wchar_t cls[256];
 					wchar_t val[256];
@@ -319,13 +320,14 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 						case CDDS_PREPAINT: return CDRF_NOTIFYITEMDRAW;
 						case CDDS_ITEMPREPAINT: {
 							ListView_GetItemText(lplvcd->nmcd.hdr.hwndFrom, lplvcd->nmcd.dwItemSpec, 0, name, 30);
-							ListView_GetItemText(lplvcd->nmcd.hdr.hwndFrom, lplvcd->nmcd.dwItemSpec, 3, pidhwnd, 10);
-							tmphwnd = (HWND)_wtoi(pidhwnd);
-							
-							GetClassName(tmphwnd, cls, 256);
 							if (RegOpenKeyEx(m_regset, name, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
 								break;
 							}
+							
+							ListView_GetItemText(ListViewDialog(), lplvcd->nmcd.dwItemSpec, 3, pidhwnd, 10);
+							tmphwnd = (HWND)_wtoi(pidhwnd);
+							
+							GetClassName(tmphwnd, cls, 256);
 							
 							if (RegGetValue(m_regset, name, L"Class", RRF_RT_REG_SZ, NULL, &val, &(len = 256)) == ERROR_SUCCESS) {
 								if (wcscmp(val, cls) == 0) {
@@ -336,6 +338,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 							break;
 						}
 					}
+					break;
 				}
 			}
 			break;
@@ -364,6 +367,8 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 						//Change Window Property
 						void (*executionFunc)(HWND, HWND, LPCWSTR) = NULL;
 						
+						if (c_listViewIndex == -1) { break; }
+						
 						switch (EventDialog()) {
 							case ID_BUTTON_PROP:
 								executionFunc = Process_WindowPropChange; break;
@@ -389,7 +394,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 								break;
 							case ID_BUTTON_FILTER:
 								if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), hwnd, FilterProc)) {
-									Log_Message(LOG_CHANGE_FILTER, NULL);
+									Log_Message(LOG_FORMAT_FILTER, LOG_CHANGE_FILTER, NULL, NULL);
 								}
 								Control_RefreshListView();
 								break;
@@ -404,7 +409,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 						if (IsWindow((HWND)_wtoi(pidhwnd))) {
 							executionFunc((HWND)_wtoi(pidhwnd), (HWND)lParam, name);
 						} else {
-							Log_Message(LOG_NO_WINDOW, (HWND)_wtoi(pidhwnd), name);
+							Menu_InfoNotifyIcon(name, LOG_NO_WINDOW, 3000);
 						}
 						Control_RefreshListView();
 					}
@@ -612,8 +617,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	Control_RefreshListView();
 	
 	//Add System Tray Notify Icon
-	Menu_RemoveNotifyIcon();
-	Menu_AddNotifyIcon(m_main);
+	Menu_AddNotifyIcon();
 	Menu_MakeMenu();
 	
 	//Get Registry (MOVE)

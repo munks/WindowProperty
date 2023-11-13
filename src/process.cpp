@@ -263,7 +263,7 @@ int CheckAbsolutePath (const wchar_t* name) {
 	wcscpy(wcsrchr(checker, L'\\') + 1, name);
 	
 	if (_waccess(checker, 0)) {
-		Log_Message(LOG_NO_PROGRAM, name);
+		Menu_InfoNotifyIcon(LOG_NO_PROGRAM, name, 3000);
 		return 1;
 	}
 	
@@ -331,7 +331,7 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 			SetWindowPos(hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
 						0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 			
-			Log_Message(LOG_SET_PROP, name);
+			Log_Message(LOG_FORMAT_NORMAL, LOG_SET_PROP, name, NULL);
 		}
 	}
 	
@@ -344,7 +344,7 @@ void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_NAME), m_main, NameProc)) {
 		SetWindowText(hwnd, p_caption);
 		
-		Log_Message(LOG_CHANGE_CAPTION, name);
+		Log_Message(LOG_FORMAT_NORMAL, LOG_CHANGE_CAPTION, name, NULL);
 	}
 }
 
@@ -361,7 +361,7 @@ void Process_WindowOpacityChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	SetLayeredWindowAttributes(hwnd, 0, alpha, LWA_ALPHA);
 	SetWindowRenew(hwnd);
 	
-	Log_Message(LOG_SET_OPACITY, percent, name);
+	Log_Message(LOG_FORMAT_OPACITY, LOG_SET_OPACITY, name, (wchar_t*)percent);
 }
 
 void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -389,7 +389,7 @@ void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 		SetWindowRenew(hwnd);
 	}
 	
-	Log_Message(LOG_CHANGE_SCREEN, isMaximized ? LOG_CHANGE_SCREEN_WINDOW : LOG_CHANGE_SCREEN_FULL, name);
+	Log_Message(LOG_FORMAT_EXTRA, LOG_CHANGE_SCREEN, name, isMaximized ? LOG_CHANGE_SCREEN_WINDOW : LOG_CHANGE_SCREEN_FULL);
 }
 
 void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -438,16 +438,16 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	if (err > 32) {
 		switch (GetDlgCtrlID(ctrl)) {
 			case ID_BUTTON_CMD: {
-				Log_Message(LOG_GET_COMMAND, name);
+				Log_Message(LOG_FORMAT_NORMAL, LOG_GET_COMMAND, name, NULL);
 				break;
 			}
 			case ID_BUTTON_CAPTURE: {
-				Log_Message(LOG_CHANGE_CAPTURE, wda ? L"NONE" : L"EXCLUDEFROMCAPTURE", name);
+				Log_Message(LOG_FORMAT_EXTRA, LOG_CHANGE_CAPTURE, name, wda ? L"NONE" : L"EXCLUDEFROMCAPTURE");
 				break;
 			}
 		}
 	} else {
-		Log_Message(LOG_SE_FAILED, FormatSEError(err));
+		Menu_InfoNotifyIcon(LOG_SE_FAILED, FormatSEError(err), 3000);
 	}
 }
 
@@ -471,5 +471,6 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	
 	ShellExecute(m_main, L"open", path, NULL, NULL, SW_SHOW);
 	
-	Log_Message(LOG_OPEN_DIRECTORY, name);
+	Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_FAILED, 3000);
+	Log_Message(LOG_FORMAT_NORMAL, LOG_OPEN_DIRECTORY, name, NULL);
 }

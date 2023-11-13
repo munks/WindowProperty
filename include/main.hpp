@@ -3,11 +3,9 @@
 //Macro - Case Switch
 #define WindowEventCase(c)	switch(c)
 #define DialogEventCase(c)	switch(c)
-#define SizingEventCase(c)	switch(c)
 #define NotifyEventCase(c)	switch(c)
 #define WindowEvent(e)		case e:
 #define DialogEvent(e)		case e:
-#define SizingEvent(e)		case e:
 #define NotifyEvent(e)		case e:
 
 //Macro - Useful Combine
