@@ -7,7 +7,7 @@ setlocal
 set FILES=main.cpp control.cpp menu.cpp log.cpp util.cpp process.cpp hook.cpp vk.cpp debug.cpp
 
 rem Path
-if not exist ../bin mkdir ./bin
+if not exist ../bin mkdir ..\bin
 cd ../src
 
 rem Resource Compile

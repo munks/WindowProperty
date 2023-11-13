@@ -1,11 +1,11 @@
 #pragma once
 
 //Window Main
-#define WINDOW_MAIN_NAME			L"WindowProperty"
+#define WINDOW_MAIN_NAME			L"DualityFrame_Property"
 #define WINDOW_MAIN_CAPTION			L"Process"
 
 //Window Log
-#define WINDOW_LOG_NAME				L"WindowLog"
+#define WINDOW_LOG_NAME				L"DualityFrame_Property_Log"
 #define WINDOW_LOG_CAPTION			L"Log"
 
 //Window Hotkey
@@ -85,19 +85,25 @@
 #define LINK_EXSTYLE				L"https://learn.microsoft.com/ko-kr/windows/win32/winmsg/extended-window-styles"
 
 //Log
-#define LOG_NO_PROGRAM				L"명령줄 인수를 받아오는 프로그램이 없습니다. (%ls)"
-#define LOG_SET_PROP				L"창 설정을 변경했습니다. (%ls)"
-#define LOG_CHANGE_CAPTION			L"창 제목을 변경했습니다. (%ls)"
-#define LOG_SET_OPACITY				L"창 불투명도를 %d%%로 설정했습니다. (%ls)"
-#define LOG_CHANGE_SCREEN			L"창을 %ls로 설정했습니다. (%ls)"
+#define LOG_FORMAT_NORMAL			L"%ls: %ls"
+#define LOG_FORMAT_EXTRA			L"%ls: %ls(%ls)"
+#define LOG_FORMAT_FILTER			L"%ls"
+#define LOG_FORMAT_NW				L"%ls: %ls(%d)"
+#define LOG_FORMAT_OPACITY			L"%ls: %ls(%d%%)"
+
+#define LOG_CHANGE_FILTER			L"검색 필터 변경"
+#define LOG_NO_WINDOW				L"창 없음"
+#define LOG_NO_PROGRAM				L"프로그램 없음"
+#define LOG_SET_PROP				L"창 설정 변경"
+#define LOG_CHANGE_CAPTION			L"창 제목 변경"
+#define LOG_SET_OPACITY				L"창 불투명도 변경"
+#define LOG_CHANGE_SCREEN			L"창 모드 변경"
 #define LOG_CHANGE_SCREEN_WINDOW	L"창 모드"
 #define LOG_CHANGE_SCREEN_FULL		L"전체 화면"
-#define LOG_GET_COMMAND				L"프로세스의 명령줄 인수를 받아왔습니다. (%ls)"
-#define LOG_CHANGE_CAPTURE			L"창의 캡쳐 가능 여부를 %ls 상태로 변경했습니다. (%ls)"
-#define LOG_SE_FAILED				L"프로그램의 실행에 실패했습니다. (%ls)"
-#define LOG_OPEN_DIRECTORY			L"프로그램의 경로 폴더를 열었습니다. (%ls)"
-#define LOG_NO_WINDOW				L"창을 찾을 수 없습니다. (HWND: %u)"
-#define LOG_CHANGE_FILTER			L"창 검색 필터를 변경했습니다."
+#define LOG_GET_COMMAND				L"프로세스 명령줄 확인"
+#define LOG_CHANGE_CAPTURE			L"창 캡쳐 상태 변경"
+#define LOG_SE_FAILED				L"프로그램 실행 실패"
+#define LOG_OPEN_DIRECTORY			L"디렉토리 열기"
 
 //Dialog
 #define DLG_PROP_TITLE				L"속성"

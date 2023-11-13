@@ -29,14 +29,14 @@ LRESULT CALLBACK LogProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 //External
 
-void Log_Message (LPCWSTR message, ...) {
+void Log_Message (LPCWSTR format, LPCWSTR msg1, LPCWSTR msg2, LPCWSTR msg3) {
 	wchar_t output[100];
 	time_t t;
 	wchar_t timeText[15];
 	
 	time(&t);
 	wcsftime(timeText, 15, L"%H:%M:%S - ", localtime(&t));
-	swprintf(output, message, *(&message+1), *(&message+2));
+	swprintf(output, format, msg1, msg2, msg3);
 	
 	AddTextToLogEdit(timeText);
 	AddTextToLogEdit(output);

@@ -3,8 +3,10 @@ Window Property
 
 Global Variable Naming Rule:
 main.cpp - m_#Var
+hook.cpp - h_#Var
+menu.cpp - me_#Var
 control.cpp - c_#Var
-icon.cpp - i_#Var
+util.cpp - u_#Var
 log.cpp - l_#Var
 process.cpp - p_#Var
 */
