@@ -9,6 +9,7 @@
 #define ID_LIST					3
 #define ID_DLG_NAME				4	//Change Name
 #define ID_DLG_PROP				5 	//Prop Change
+#define ID_DLG_HOTKEY			6 	//Change Hotkey
 
 #define ID_BUTTON_PROP			100
 #define ID_BUTTON_NAME			101
@@ -27,9 +28,8 @@
 #define ID_BUTTON_PROP_CONFIRM	142
 #define ID_BUTTON_PROP_CANCEL	143
 #define ID_BUTTON_PROP_ADD		144
-#define ID_BUTTON_PROP_ADD2		145
-#define ID_BUTTON_HK_MA			146
-#define ID_BUTTON_HK_CC			147
+#define ID_BUTTON_HK_CONFIRM	145
+#define ID_BUTTON_HK_CANCEL		146
 
 #define ID_EDIT_LOG				200
 #define ID_EDIT_ALPHA			201
@@ -89,6 +89,9 @@
 #define ID_BUTTON_EXSTL_NA		(PROP_BUTTON_EX + 27)
 #define ID_BUTTON_EXSTL_PW		(PROP_BUTTON_EX + 32) //3 | 7 | 8
 #define ID_BUTTON_EXSTL_OLW		(PROP_BUTTON_EX + 33) //8 | 9
+
+#define ID_HOTKEY_MA			500
+#define ID_HOTKEY_CC			501
 
 #define TN_MENU_MOVE			0
 #define TN_MENU_CLIP			1

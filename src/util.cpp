@@ -18,7 +18,7 @@ bool CheckErrorFunc (void* checkVar, LPCSTR file, int line, LPCSTR targetValName
 	return true;
 }
 
-wchar_t* Util_GetHotkeyString (DWORD hotkey) {
+wchar_t* Util_GetHotkeyRegkey (DWORD hotkey) {
 	static wchar_t str[20];
 	
 	switch (hotkey) {
@@ -33,17 +33,6 @@ wchar_t* Util_GetHotkeyString (DWORD hotkey) {
 	}
 	
 	return str;
-}
-
-void Util_SetHotkeyText (DWORD hotkey, DWORD vk) {
-	switch (hotkey) {
-		case HOTKEY_MOVE:
-			SetWindowText(GetDlgItem(h_window, ID_STATIC_HK_MA), VirtualKeyCodeText(vk));
-			break;
-		case HOTKEY_CURSOR:
-			SetWindowText(GetDlgItem(h_window, ID_STATIC_HK_CC), VirtualKeyCodeText(vk));
-			break;
-	}
 }
 
 //External
@@ -110,27 +99,74 @@ bool Util_WindowFilter (HWND hwnd) {
 	return true;
 }
 
-DWORD Util_GetHotkey (DWORD hotkey) {
+DWORD Util_GetHotkey (DWORD hotkey, int type) {
 	DWORD tmp, rtn;
-	DWORD size = 4;
+	DWORD size;
 	LSTATUS result;
+	WORD data;
+	BYTE vk, ak;
 	
-	result = RegGetValue(m_regkey, NULL, Util_GetHotkeyString(hotkey), RRF_RT_DWORD, NULL, &tmp, &size);
-	rtn = result ? 0 : tmp;
+	result = RegGetValue(m_regkey, NULL, Util_GetHotkeyRegkey(hotkey), RRF_RT_DWORD, NULL, &tmp, &(size = 4));
 	
-	Util_SetHotkeyText(hotkey, rtn);
+	if (result) {
+		return 0;
+	}
 	
-	return rtn;
+	data = LOWORD(tmp);
+	vk = LOBYTE(data);
+	ak = HIBYTE(data);
+	
+	switch (type) {
+		case HK_TYPE_VK:
+			return vk;
+		case HK_TYPE_AK:
+			rtn = 0;
+			if (ak & HOTKEYF_ALT) { rtn |= MOD_ALT; }
+			if (ak & HOTKEYF_CONTROL) { rtn |= MOD_CONTROL; }
+			if (ak & HOTKEYF_SHIFT) { rtn |= MOD_SHIFT; }
+			return rtn;
+		case HK_TYPE_ALL:
+			return tmp;
+	}
+
+	return 0;
+}
+
+LPWSTR Util_GetHotkeyString (DWORD hotkey) {
+	static wchar_t out[30];
+	DWORD tmp;
+	DWORD size;
+	LSTATUS result;
+	WORD data;
+	BYTE vk, ak;
+	
+	result = RegGetValue(m_regkey, NULL, Util_GetHotkeyRegkey(hotkey), RRF_RT_DWORD, NULL, &tmp, &(size = 4));
+	
+	if (result) {
+		wcscpy(out, VK_NONE);
+		return out;
+	}
+	
+	data = LOWORD(tmp);
+	vk = LOBYTE(data);
+	ak = HIBYTE(data);
+	
+	out[0] = L'\0';
+	if (ak & HOTKEYF_CONTROL) { wcscat(out, L"C"); }
+	if (ak & HOTKEYF_SHIFT) { wcscat(out, L"S"); }
+	if (ak & HOTKEYF_ALT) { wcscat(out, L"A"); }
+	if (ak) { wcscat(out, L" + "); }
+	wcscat(out, VirtualKeyCodeText(vk));
+	
+	return out;
 }
 
 LSTATUS Util_SetHotkey (DWORD hotkey, DWORD vk) {
-	wchar_t* keystr = Util_GetHotkeyString(hotkey);
+	wchar_t* keystr = Util_GetHotkeyRegkey(hotkey);
 	
 	if (keystr == NULL) {
 		return ERROR_INVALID_DATA;
 	}
-	
-	Util_SetHotkeyText(hotkey, vk);
 	
 	return RegSetValueEx(m_regkey, keystr, 0, REG_DWORD, (BYTE*)&vk, sizeof(DWORD));
 }
@@ -149,38 +185,6 @@ void Util_PrintWindowsLastError () {
 	LocalFree(msg);
 }
 
-void Util_SettingConfig (LONG_PTR* prop, HWND hwnd, bool add) {
-	wchar_t str[256], *exe;
-	DWORD len;
-	HKEY key;
-	HANDLE handle;
-	
-	handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(hwnd));
-    QueryFullProcessImageName(handle, 0, str, &(len = 256));
-    CloseHandle(handle);
-	
-	exe = wcsrchr(str, L'\\') + 1;
-	GetClassName(hwnd, str, 256);
-	
-	RegCreateKeyEx(m_regset, exe, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
-	
-	if (add) {
-		RegSetValueEx(key, L"Style", 0, REG_DWORD, (BYTE*)&prop[0], sizeof(DWORD));
-		RegSetValueEx(key, L"ExStyle", 0, REG_DWORD, (BYTE*)&prop[1], sizeof(DWORD));
-		RegSetValueEx(key, L"Class", 0, REG_SZ, (BYTE*)&str, wcslen(str) * sizeof(wchar_t));
-	} else {
-		RegDeleteTree(m_regset, exe);
-		RegDeleteKey(m_regset, exe);
-	}
-	
-	RegCloseKey(key);
-	
-	while (m_loopStop) {
-		Sleep(500);
-	}
-	m_loopStop = true;
-}
-
 void Util_PrintInt (int i) {
 	char txt[260];
 	
@@ -190,4 +194,12 @@ void Util_PrintInt (int i) {
 
 void Util_PrintString (const wchar_t* str) {
 	MessageBox(NULL, str, L"Str.", MB_OK);
+}
+
+DWORD Util_GetWDAState (HWND hwnd) {
+	DWORD wda;
+	
+	GetWindowDisplayAffinity(hwnd, &wda);
+	
+	return wda;
 }

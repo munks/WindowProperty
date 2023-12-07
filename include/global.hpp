@@ -39,6 +39,7 @@ process.cpp - p_#Var
 #include "log.hpp"
 #include "util.hpp"
 #include "process.hpp"
+#include "dlgfunction.hpp"
 #include "hook.hpp"
 #include "vk.hpp"
 #include "resource.h"

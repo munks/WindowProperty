@@ -90,8 +90,10 @@
 #define LOG_FORMAT_FILTER			L"%ls"
 #define LOG_FORMAT_NW				L"%ls: %ls(%d)"
 #define LOG_FORMAT_OPACITY			L"%ls: %ls(%d%%)"
+#define LOG_FORMAT_HOTKEY			L"%ls"
 
 #define LOG_CHANGE_FILTER			L"Search Filter Change"
+#define LOG_CHANGE_HOTKEY			L"Hotkey Change"
 #define LOG_NO_WINDOW				L"No Window"
 #define LOG_NO_PROGRAM				L"No Program"
 #define LOG_SET_PROP				L"Window Prop Change"
@@ -109,10 +111,11 @@
 #define DLG_PROP_TITLE				L"Properties"
 #define DLG_PROP_LINK_STYLE			L"See Window Style Description (Click)"
 #define DLG_PROP_LINK_EXSTYLE		L"See Extended Window Style Description (Click)"
-#define DLG_PROP_ADD_PROP			L"Fixed Setting"
-#define DLG_PROP_ADD2_PROP			L"Fix Release"
-#define DLG_PROP_ADD2_FILTER		L"Reset"
+#define DLG_PROP_ADD_FILTER			L"Reset"
 #define DLG_PROP_CONFIRM			L"Confirm"
 #define DLG_PROP_CANCEL				L"Cancel"
 #define DLG_PROP_TIME				L"Runtime: %dh %dm %ds %03d"
 #define DLG_PROP_TIME_ACC_DENIED	L"Runtime: Unable to load because access denied."
+
+//Virtual Key
+#define VK_NONE						L"(None)"

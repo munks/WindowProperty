@@ -8,7 +8,6 @@ HINSTANCE m_hInstance;
 HFONT m_font;
 HKEY m_regkey;
 HKEY m_regset;
-bool m_loopStop;
 
 //External
 
@@ -30,7 +29,6 @@ void Main_DeleteRegistryVer0() {
 	DWORD len;
 	wchar_t key[256];
 	
-	
 	while (RegEnumKeyEx(m_regset, idx, key, &(len = 256), NULL, NULL, NULL, NULL) == ERROR_SUCCESS) {
 		RegDeleteTree(m_regset, key);
 		RegDeleteKey(m_regset, key);
@@ -50,227 +48,6 @@ void Main_VersionCheck (DWORD ver) {
 	}
 	
 	RegSetValueEx(m_regkey, L"Version", 0, REG_DWORD, (BYTE*)&ver, sizeof(DWORD));
-}
-
-LRESULT CALLBACK FilterProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	HWND tmphwnd;
-	LONG_PTR style;
-	
-	#ifdef _DEBUG
-	Debug_ConvertWindowMessage(uMsg);
-	#endif
-	
-	WindowEventCase(uMsg) {
-		WindowEvent(WM_INITDIALOG) {
-			//Set Style Button
-			Control_PropDialogInit(hwnd, u_filter[0], u_filter[1], true, NULL, DLG_PROP_ADD2_FILTER, false);
-			
-			return DefWindowProc(hwnd, uMsg, wParam, lParam);
-		}
-		WindowEvent(WM_LBUTTONDOWN) {
-			SetFocus(hwnd);
-			return DefWindowProc(hwnd, uMsg, wParam, lParam);
-		}
-		WindowEvent(WM_COMMAND) {
-			DialogEventCase(EventDialog()) {
-				//Reset
-				DialogEvent(ID_BUTTON_PROP_ADD2) {
-					if (EventMessage() == BN_CLICKED) {
-						for (int i = 0; i < 32; i++) {
-							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
-								Button_SetCheck(tmphwnd, BST_UNCHECKED);
-							}
-							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
-								Button_SetCheck(tmphwnd, BST_UNCHECKED);
-							}
-						}
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_VISIBLE), BST_CHECKED);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_TW), BST_INDETERMINATE);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_NRB), BST_INDETERMINATE);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_NA), BST_INDETERMINATE);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_PW), BST_UNCHECKED);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_CAPTION), BST_UNCHECKED);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_STL_OLW), BST_UNCHECKED);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_PW), BST_UNCHECKED);
-						Button_SetCheck(GetDlgItem(hwnd, ID_BUTTON_EXSTL_OLW), BST_UNCHECKED);
-					}
-					break;
-				}
-				//Confirm/Cancel
-				DialogEvent(ID_BUTTON_PROP_CONFIRM) {
-					if (EventMessage() == BN_CLICKED) {
-						u_filter[0][0] = 0;
-						u_filter[0][1] = 0;
-						u_filter[1][0] = 0;
-						u_filter[1][1] = 0;
-						
-						for (int i = 0; i < 32; i++) {
-							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
-								switch (Button_GetCheck(tmphwnd)) {
-									case BST_CHECKED: u_filter[0][0] |= 1 << i; break;
-									case BST_INDETERMINATE: u_filter[0][1] |= 1 << i; break;
-								}
-							}
-							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
-								switch (Button_GetCheck(tmphwnd)) {
-									case BST_CHECKED: u_filter[1][0] |= 1 << i; break;
-									case BST_INDETERMINATE: u_filter[1][1] |= 1 << i; break;
-								}
-							}
-						}
-						RegSetValueEx(m_regset, L"FilterIncludeStyle", 0, REG_DWORD, (BYTE*)&u_filter[0][0], sizeof(DWORD));
-						RegSetValueEx(m_regset, L"FilterExcludeStyle", 0, REG_DWORD, (BYTE*)&u_filter[0][1], sizeof(DWORD));
-						RegSetValueEx(m_regset, L"FilterIncludeExStyle", 0, REG_DWORD, (BYTE*)&u_filter[1][0], sizeof(DWORD));
-						RegSetValueEx(m_regset, L"FilterExcludeExStyle", 0, REG_DWORD, (BYTE*)&u_filter[1][1], sizeof(DWORD));
-						EndDialog(hwnd, 0);
-					}
-					break;
-				}
-				DialogEvent(ID_BUTTON_PROP_CANCEL) {
-					if (EventMessage() == BN_CLICKED) {
-						EndDialog(hwnd, 1);
-					}
-					break;
-				}
-				//Button On/Off (Multiple Style)
-				DialogEvent(ID_BUTTON_STL_PW)
-				DialogEvent(ID_BUTTON_STL_CAPTION)
-				DialogEvent(ID_BUTTON_STL_OLW)
-				DialogEvent(ID_BUTTON_EXSTL_PW)
-				DialogEvent(ID_BUTTON_EXSTL_OLW)
-				DialogEvent(ID_BUTTON_STL_TM)
-				DialogEvent(ID_BUTTON_STL_GM)
-				DialogEvent(ID_BUTTON_STL_TS)
-				DialogEvent(ID_BUTTON_STL_SYSMENU)
-				DialogEvent(ID_BUTTON_STL_DLGFRAME)
-				DialogEvent(ID_BUTTON_STL_BORDER)
-				DialogEvent(ID_BUTTON_STL_POPUP)
-				DialogEvent(ID_BUTTON_EXSTL_TM)
-				DialogEvent(ID_BUTTON_EXSTL_TW)
-				DialogEvent(ID_BUTTON_EXSTL_WE)
-				DialogEvent(ID_BUTTON_EXSTL_CE) {
-					if (EventMessage() == BN_CLICKED) {
-						Control_PropDialogButtonState(hwnd, EventDialog(), (HWND)lParam);
-					}
-					break;
-				}
-				//Open Link (Style Description
-				DialogEvent(ID_STATIC_STYLE) {
-					if (EventMessage() == STN_CLICKED) {
-						ShellExecute(NULL, L"open", LINK_STYLE, NULL, NULL, SW_SHOWNORMAL);
-					}
-					break;
-				}
-				DialogEvent(ID_STATIC_EXSTYLE) {
-					if (EventMessage() == STN_CLICKED) {
-						ShellExecute(NULL, L"open", LINK_EXSTYLE, NULL, NULL, SW_SHOWNORMAL);
-					}
-					break;
-				}
-			}
-			return DefWindowProc(hwnd, uMsg, wParam, lParam);
-		}
-		WindowEvent(WM_CLOSE) {
-			EndDialog(hwnd, 1);
-			return 0;
-		}
-	}
-	
-	return 0;
-}
-
-BOOL CALLBACK HWNDDetectInternal (HWND hwnd, LPARAM lParam) {
-	HDATA* data = (HDATA*)lParam;
-    HANDLE handle;
-	wchar_t str[260], exe[260];
-	DWORD len, style[2];
-	
-	if (GetParent(hwnd) != NULL) { return TRUE; }
-	
-	handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(hwnd));
-    QueryFullProcessImageName(handle, 0, str, &(len = 260));
-    CloseHandle(handle);
-	
-	if (wcsrchr(str, L'\\') == NULL) { return TRUE; }
-	
-	wcscpy(exe, wcsrchr(str, L'\\') + 1);
-	GetClassName(hwnd, str, 260);
-	
-	for (int i = 0; i < data->total; i++) {
-		if (wcscmp(exe, data->name[i]) != 0) { continue; }
-		if (wcscmp(str, data->cls[i]) != 0) { continue; }
-		if ((RegGetValue(m_regset, data->name[i], L"Style", RRF_RT_DWORD, NULL, &style[0], &(len = sizeof(DWORD))) == ERROR_SUCCESS) &&
-			(RegGetValue(m_regset, data->name[i], L"ExStyle", RRF_RT_DWORD, NULL, &style[1], &(len = sizeof(DWORD))) == ERROR_SUCCESS)) {
-			if ((GetWindowLongPtr(hwnd, GWL_STYLE) != style[0]) ||
-				(GetWindowLongPtr(hwnd, GWL_EXSTYLE) != style[1])) {
-				puts("Style Change Complete\n");
-				//Set Window Properties - If not same
-				SetWindowLongPtr(hwnd, GWL_STYLE, style[0]);
-				SetWindowLongPtr(hwnd, GWL_EXSTYLE, style[1]);
-				//Set TOPMOST | VISIBLE
-				SetWindowPos(hwnd, style[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
-							 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
-			}
-		}
-		return TRUE;
-	}
-	
-	return TRUE;
-}
-
-DWORD WINAPI HWNDDetect (LPVOID param) {
-	HDATA data;
-	DWORD len;
-	wchar_t tmpname[256], tmpcls[256];
-	bool wait;
-	
-	//Begin
-	BEGIN:
-	wait = false;
-	
-	//Search Registry / Allocate data
-	RegQueryInfoKey(m_regset, NULL, NULL, NULL, &data.total, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-	if (data.total <= 0) { wait = true; goto LOOP; } //if key is none
-	data.name = new wchar_t*[data.total];
-	data.cls = new wchar_t*[data.total];
-	
-	for (int i = 0; i < data.total; i++) {
-		if (RegEnumKeyEx(m_regset, i, tmpname, &(len = 256), NULL, NULL, NULL, NULL) == ERROR_SUCCESS) {
-			data.name[i] = new wchar_t[len + 1];
-			wcscpy(data.name[i], tmpname);
-		} else {
-			data.name[i] = NULL;
-			continue;
-		}
-		if (RegGetValue(m_regset, tmpname, L"Class", RRF_RT_REG_SZ, NULL, &tmpcls, &(len = 256)) == ERROR_SUCCESS) {
-			data.cls[i] = new wchar_t[len + 1];
-			wcscpy(data.cls[i], tmpcls);
-		} else {
-			data.cls[i] = NULL;
-		}
-	}
-	
-	//Loop
-	LOOP:
-	m_loopStop = false;
-	while (!m_loopStop) {
-		if (!wait) { EnumWindows(HWNDDetectInternal, (LPARAM)&data); }
-		Sleep(500);
-	}
-	
-	//Release
-	if (!wait) {
-		for (int i = 0; i < data.total; i++) {
-			if (data.name[i] != NULL) { delete data.name[i]; }
-			if (data.cls[i] != NULL) { delete data.cls[i]; }
-		}
-		delete data.name;
-		delete data.cls;
-	}
-	
-	goto BEGIN;
-	
-	return 0;
 }
 
 LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -304,40 +81,10 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 					tmphwnd = (HWND)_wtoi(pidhwnd);
 					changed = GetLayeredWindowAttributes(tmphwnd, NULL, &alpha, NULL);
 					
-					Control_SetChangeText(tmphwnd, GetDlgItem(hwnd, ID_BUTTON_CAPTURE));
+					Button_SetText(GetDlgItem(hwnd, ID_BUTTON_CAPTURE),
+								Util_GetWDAState(tmphwnd) ? BUTTON_CAPTURE_CAPTION : BUTTON_CAPTURE_CAPTION_2);
 					swprintf(text, L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
 					SetDlgItemText(hwnd, ID_EDIT_ALPHA, text);
-					break;
-				}
-				NotifyEvent(NM_CUSTOMDRAW) {
-					LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
-					wchar_t cls[256];
-					wchar_t val[256];
-					DWORD len;
-					HKEY key;
-					
-					switch (lplvcd->nmcd.dwDrawStage) {
-						case CDDS_PREPAINT: return CDRF_NOTIFYITEMDRAW;
-						case CDDS_ITEMPREPAINT: {
-							ListView_GetItemText(lplvcd->nmcd.hdr.hwndFrom, lplvcd->nmcd.dwItemSpec, 0, name, 30);
-							if (RegOpenKeyEx(m_regset, name, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
-								break;
-							}
-							
-							ListView_GetItemText(ListViewDialog(), lplvcd->nmcd.dwItemSpec, 3, pidhwnd, 10);
-							tmphwnd = (HWND)_wtoi(pidhwnd);
-							
-							GetClassName(tmphwnd, cls, 256);
-							
-							if (RegGetValue(m_regset, name, L"Class", RRF_RT_REG_SZ, NULL, &val, &(len = 256)) == ERROR_SUCCESS) {
-								if (wcscmp(val, cls) == 0) {
-									lplvcd->clrText = RGB(255,0,0);
-								}
-							}
-							RegCloseKey(key);
-							break;
-						}
-					}
 					break;
 				}
 			}
@@ -366,8 +113,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 					if (EventMessage() == BN_CLICKED) {
 						//Change Window Property
 						void (*executionFunc)(HWND, HWND, LPCWSTR) = NULL;
-						
-						if (c_listViewIndex == -1) { break; }
+						bool absolute = false;
 						
 						switch (EventDialog()) {
 							case ID_BUTTON_PROP:
@@ -384,32 +130,26 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 							case ID_BUTTON_OPEN:
 								executionFunc = Process_OpenDirectory; break;
 							case ID_BUTTON_HOTKEY:
-								if(!IsWindowVisible(h_window)) {
-									//Set Hotkey Window Position
-									GetWindowRect(m_main, &rect);
-									SetWindowPos(h_window, HWND_TOPMOST, rect.left + 20, rect.top + 20, 0, 0, SWP_NOSIZE);
-								}
-								//Show Hotkey Window
-								ShowWindow(h_window, SW_SHOW);
-								break;
+								executionFunc = Process_ChangeHotkey; absolute = true; break;
 							case ID_BUTTON_FILTER:
-								if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), hwnd, FilterProc)) {
-									Log_Message(LOG_FORMAT_FILTER, LOG_CHANGE_FILTER, NULL, NULL);
-								}
-								Control_RefreshListView();
-								break;
+								executionFunc = Process_ChangeFilter; absolute = true; break;
 						}
-						
-						if (executionFunc == NULL) { break; }
-						ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 0, name, 30);
-						if (name[0] == L'*') { wcscpy(name, name + 1); }
-						
-						//Selected Process Execution
-						ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
-						if (IsWindow((HWND)_wtoi(pidhwnd))) {
-							executionFunc((HWND)_wtoi(pidhwnd), (HWND)lParam, name);
+						if (absolute) {
+							executionFunc(NULL, NULL, NULL);
 						} else {
-							Menu_InfoNotifyIcon(name, LOG_NO_WINDOW, 3000);
+							if (c_listViewIndex == -1) { break; }
+							
+							if (executionFunc == NULL) { break; }
+							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 0, name, 30);
+							if (name[0] == L'*') { wcscpy(name, name + 1); }
+							
+							//Selected Process Execution
+							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
+							if (IsWindow((HWND)_wtoi(pidhwnd))) {
+								executionFunc((HWND)_wtoi(pidhwnd), (HWND)lParam, name);
+							} else {
+								Menu_InfoNotifyIcon(name, LOG_NO_WINDOW, 3000);
+							}
 						}
 						Control_RefreshListView();
 					}
@@ -485,7 +225,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 		//Hotkey Processing
 		WindowEvent(WM_HOTKEY) {
-			if (wParam == h_moveHotkey) {
+			if (wParam == HOTKEY_MOVE) {
 				Hook_MouseHook();
 				
 				#ifdef _DEBUG
@@ -493,7 +233,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				#endif
 				break;
 			}
-			if (wParam == h_clipHotkey) {
+			if (wParam == HOTKEY_CURSOR) {
 				Hook_ClipCursor();
 				
 				#ifdef _DEBUG
@@ -563,13 +303,12 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	
 	//Create Log/Hotkey Window
 	Log_CreateWindow(m_main);
-	Hook_CreateWindow(m_main);
 	
 	//Check Hotkey
-	if (Util_GetHotkey(HOTKEY_MOVE) == 0) {
+	if (Util_GetHotkey(HOTKEY_MOVE, HK_TYPE_VK) == 0) {
 		Util_SetHotkey(HOTKEY_MOVE, VK_F3);
 	}
-	if (Util_GetHotkey(HOTKEY_CURSOR) == 0) {
+	if (Util_GetHotkey(HOTKEY_CURSOR, HK_TYPE_VK) == 0) {
 		Util_SetHotkey(HOTKEY_CURSOR, VK_F4);
 	}
 	
@@ -636,9 +375,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	if (strcmp(pCmdLine, "-hide")) {
 		ShowWindow(m_main, SW_SHOW);
 	}
-	
-	//Create Thread (Setting)
-	CreateThread(NULL, 0, HWNDDetect, NULL, 0, NULL);
 	
 	//Message Loop
 	MSG msg = {};
