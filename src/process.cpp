@@ -4,67 +4,67 @@
 
 wchar_t p_caption[MAX_PATH];
 LONG_PTR p_currentProp[2];
-HWND p_currentHwnd;
-FILETIME p_createtime;
+TDATA p_tdata;
 wchar_t p_exeFile[30];
+DWORD p_dlgType;
+
 //Internal
 
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
 
-void DateOperate (FILETIME* src, FILETIME* target) {
-	ULARGE_INTEGER tmp[2];
+LRESULT CALLBACK HotkeyProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	
-	tmp[0].LowPart = src->dwLowDateTime;
-	tmp[0].HighPart = src->dwHighDateTime;
-	tmp[1].LowPart = target->dwLowDateTime;
-	tmp[1].HighPart = target->dwHighDateTime;
+	#ifdef _DEBUG
+	Debug_ConvertWindowMessage(uMsg);
+	#endif
 	
-	tmp[0].QuadPart -= tmp[1].QuadPart;
-	
-	src->dwLowDateTime = tmp[0].LowPart;
-	src->dwHighDateTime = tmp[0].HighPart;
-}
-
-void FileTimeToTime (FILETIME* src, SYSTEMTIME* target) {
-	int sec;
-	int milsec;
-	int min;
-	int hour;
-	
-	sec = src->dwHighDateTime * 430;
-	sec += src->dwLowDateTime / (1000 * 10000);
-	milsec = (src->dwLowDateTime % (1000 * 10000)) / 10000;
-	min = sec / 60;
-	sec %= 60;
-	hour = min / 60;
-	min %= 60;
-	
-	target->wMilliseconds = milsec;
-	target->wSecond = sec;
-	target->wMinute = min;
-	target->wHour = hour;
-}
-
-DWORD WINAPI SystemTimeLoop (LPVOID param) {
-	FILETIME ftCurrent;
-	SYSTEMTIME calctime;
-	HWND hwnd = (HWND)param;
-	wchar_t timetext[260];
-	
-	while (p_currentHwnd) {
-		GetSystemTimeAsFileTime(&ftCurrent);
-		DateOperate(&ftCurrent, &p_createtime);
-		FileTimeToTime(&ftCurrent, &calctime);
-		swprintf(timetext, DLG_PROP_TIME, calctime.wHour, calctime.wMinute, calctime.wSecond, calctime.wMilliseconds);
-		SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), timetext);
-		Sleep(125);
+	WindowEventCase(uMsg) {
+		WindowEvent(WM_INITDIALOG) {
+			SendDlgItemMessage(hwnd, ID_HOTKEY_MA, HKM_SETHOTKEY, Util_GetHotkey(HOTKEY_MOVE, HK_TYPE_ALL), 0);
+			SendDlgItemMessage(hwnd, ID_HOTKEY_CC, HKM_SETHOTKEY, Util_GetHotkey(HOTKEY_CURSOR, HK_TYPE_ALL), 0);
+			Hook_ClipHotkeyRegister(false);
+			Hook_MoveHotkeyRegister(false);
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		}
+		WindowEvent(WM_COMMAND) {
+			DialogEventCase(EventDialog()) {
+				DialogEvent(ID_BUTTON_HK_CONFIRM) {
+					if (EventMessage() == BN_CLICKED) {
+						Util_SetHotkey(HOTKEY_MOVE, SendDlgItemMessage(hwnd, ID_HOTKEY_MA, HKM_GETHOTKEY, 0, 0));
+						Util_SetHotkey(HOTKEY_CURSOR, SendDlgItemMessage(hwnd, ID_HOTKEY_CC, HKM_GETHOTKEY, 0, 0));
+						EndDialog(hwnd, 0);
+					}
+					break;
+				}
+				DialogEvent(ID_BUTTON_HK_CANCEL) {
+					if (EventMessage() == BN_CLICKED) {
+						EndDialog(hwnd, 1);
+					}
+					break;
+				}
+				DialogEvent(ID_HOTKEY_MA)
+				DialogEvent(ID_HOTKEY_CC) {
+					if (DlgFunction_HotkeyValidCheck(hwnd, ID_HOTKEY_MA, ID_HOTKEY_CC)) {
+						EnableWindow(GetDlgItem(hwnd, ID_BUTTON_HK_CONFIRM), TRUE);
+					} else {
+						EnableWindow(GetDlgItem(hwnd, ID_BUTTON_HK_CONFIRM), FALSE);
+					}
+					break;
+				}
+			}
+			return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		}
+		WindowEvent(WM_CLOSE) {
+			EndDialog(hwnd, 1);
+			return 0;
+		}
 	}
 	
 	return 0;
 }
+
 LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
-	LONG_PTR tmpProp[2];
 	wchar_t cls[256];
 	wchar_t val[256];
 	DWORD len;
@@ -78,37 +78,28 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_INITDIALOG) {
+			p_dlgType = (DWORD)lParam;
+			
 			//Set Style Button
-			Control_PropDialogInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, DLG_PROP_ADD_PROP, DLG_PROP_ADD2_PROP, true);
-			
-			GetClassName(p_currentHwnd, cls, 256);
-			if (RegOpenKeyEx(m_regset, p_exeFile, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
-				EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
-				goto BUTTONEND;
-			}
-			
-			if (RegGetValue(m_regset, p_exeFile, L"Class", RRF_RT_REG_SZ, NULL, &val, &(len = 256)) != ERROR_SUCCESS) {
-				EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
-				Util_SettingConfig(NULL, p_currentHwnd, false);
-				RegCloseKey(key);
-				goto BUTTONEND;
-			}
-			
-			if (wcscmp(val, cls) != 0) {
-				EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
-				RegCloseKey(key);
-			}
-			
-			BUTTONEND:
-			
-			handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(p_currentHwnd));
-			if (handle) {
-				GetProcessTimes(handle, &p_createtime, &ft[0], &ft[1], &ft[2]);
-				CloseHandle(handle);
-				
-				CreateThread(NULL, 0, SystemTimeLoop, hwnd, 0, NULL);
-			} else {
-				SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), DLG_PROP_TIME_ACC_DENIED);
+			switch (p_dlgType) {
+				case TYPE_DLG_PROP: {
+					DlgFunction_PropInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, NULL, true);
+					
+					handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(p_tdata.hwnd));
+					if (handle) {
+						GetProcessTimes(handle, &p_tdata.ft, &ft[0], &ft[1], &ft[2]);
+						CloseHandle(handle);
+						p_tdata.timer = GetDlgItem(hwnd, ID_STATIC_TIME);
+						CreateThread(NULL, 0, DlgFunction_SystemTimeLoop, &p_tdata, 0, NULL);
+					} else {
+						SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), DLG_PROP_TIME_ACC_DENIED);
+					}
+					break;
+				}
+				case TYPE_DLG_FILTER: {
+					DlgFunction_PropInit(hwnd, u_filter[0], u_filter[1], true, DLG_PROP_ADD_FILTER, false);
+					break;
+				}
 			}
 			
 			return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -119,47 +110,39 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 		WindowEvent(WM_COMMAND) {
 			DialogEventCase(EventDialog()) {
-				//Fixed Setting
+				DialogEvent(ID_BUTTON_PROP_ADD) {
+					if (EventMessage() == BN_CLICKED) {
+						switch (p_dlgType) {
+							case TYPE_DLG_FILTER: {
+								//Reset
+								DlgFunction_ResetFilter(hwnd);
+								break;
+							}
+						}
+					}
+					break;
+				}
 				//Confirm/Cancel
-				DialogEvent(ID_BUTTON_PROP_ADD)
 				DialogEvent(ID_BUTTON_PROP_CONFIRM) {
 					if (EventMessage() == BN_CLICKED) {
-						tmpProp[0] = 0;
-						tmpProp[1] = 0;
+						switch (p_dlgType) {
+							case TYPE_DLG_PROP: {
+								DlgFunction_SetProperties(hwnd, &p_currentProp[0], &p_currentProp[1]);
+								break;
+							}
+							case TYPE_DLG_FILTER: {
+								DlgFunction_SetFilter(hwnd);
+								break;
+							}
+						}
 						
-						for (int i = 0; i < 32; i++) {
-							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
-								if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
-									tmpProp[0] |= 1 << i;
-								}
-							}
-							if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
-								if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
-									tmpProp[1] |= 1 << i;
-								}
-							}
-						}
-						if (EventDialog() == ID_BUTTON_PROP_CONFIRM) {
-							p_currentProp[0] = tmpProp[0];
-							p_currentProp[1] = tmpProp[1];
-							EndDialog(hwnd, 0);
-						} else if (EventDialog() == ID_BUTTON_PROP_ADD) {
-							Util_SettingConfig(tmpProp, p_currentHwnd, true);
-							EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), TRUE);
-						}
+						EndDialog(hwnd, 0);
 					}
 					break;
 				}
 				DialogEvent(ID_BUTTON_PROP_CANCEL) {
 					if (EventMessage() == BN_CLICKED) {
 						EndDialog(hwnd, 1);
-					}
-					break;
-				}
-				DialogEvent(ID_BUTTON_PROP_ADD2) {
-					if (EventMessage() == BN_CLICKED) {
-						Util_SettingConfig(NULL, p_currentHwnd, false);
-						EnableWindow(GetDlgItem(hwnd, ID_BUTTON_PROP_ADD2), FALSE);
 					}
 					break;
 				}
@@ -181,7 +164,7 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				DialogEvent(ID_BUTTON_EXSTL_WE)
 				DialogEvent(ID_BUTTON_EXSTL_CE) {
 					if (EventMessage() == BN_CLICKED) {
-						Control_PropDialogButtonState(hwnd, EventDialog(), (HWND)lParam);
+						DlgFunction_PropButtonState(hwnd, EventDialog(), (HWND)lParam);
 					}
 					break;
 				}
@@ -319,10 +302,10 @@ wchar_t* FormatSEError (INT_PTR err) {
 void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	p_currentProp[0] = GetWindowLongPtr(hwnd, GWL_STYLE);
 	p_currentProp[1] = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-	p_currentHwnd = hwnd;
+	p_tdata.hwnd = hwnd;
 	ListView_GetItemText(GetDlgItem(m_main, ID_LIST), c_listViewIndex, 0, p_exeFile, 30);
 	
-	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), m_main, PropProc)) {
+	if (!DialogBoxParam(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), m_main, PropProc, TYPE_DLG_PROP)) {
 		if (IsWindow(hwnd)) {
 			//Set Window Properties
 			SetWindowLongPtr(hwnd, GWL_STYLE, p_currentProp[0]);
@@ -335,7 +318,10 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 		}
 	}
 	
-	p_currentHwnd = NULL;
+	p_tdata.hwnd = NULL;
+	p_tdata.timer = NULL;
+	p_tdata.ft.dwHighDateTime = 0;
+	p_tdata.ft.dwLowDateTime = 0;
 }
 
 void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -473,4 +459,16 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	
 	Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_FAILED, 3000);
 	Log_Message(LOG_FORMAT_NORMAL, LOG_OPEN_DIRECTORY, name, NULL);
+}
+
+void Process_ChangeHotkey (HWND hwnd, HWND ctrl, LPCWSTR name) {
+	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_HOTKEY), m_main, HotkeyProc)) {
+		Log_Message(LOG_FORMAT_HOTKEY, LOG_CHANGE_HOTKEY, NULL, NULL);
+	}
+}
+
+void Process_ChangeFilter (HWND hwnd, HWND ctrl, LPCWSTR name) {
+	if (!DialogBoxParam(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), m_main, PropProc, TYPE_DLG_FILTER)) {
+		Log_Message(LOG_FORMAT_FILTER, LOG_CHANGE_FILTER, NULL, NULL);
+	}
 }

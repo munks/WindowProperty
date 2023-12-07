@@ -90,8 +90,10 @@
 #define LOG_FORMAT_FILTER			L"%ls"
 #define LOG_FORMAT_NW				L"%ls: %ls(%d)"
 #define LOG_FORMAT_OPACITY			L"%ls: %ls(%d%%)"
+#define LOG_FORMAT_HOTKEY			L"%ls"
 
 #define LOG_CHANGE_FILTER			L"검색 필터 변경"
+#define LOG_CHANGE_HOTKEY			L"단축키 변경"
 #define LOG_NO_WINDOW				L"창 없음"
 #define LOG_NO_PROGRAM				L"프로그램 없음"
 #define LOG_SET_PROP				L"창 설정 변경"
@@ -109,10 +111,11 @@
 #define DLG_PROP_TITLE				L"속성"
 #define DLG_PROP_LINK_STYLE			L"윈도우 스타일 설명 보기 (클릭)"
 #define DLG_PROP_LINK_EXSTYLE		L"확장 윈도우 스타일 설명 보기 (클릭)"
-#define DLG_PROP_ADD_PROP			L"설정 고정"
-#define DLG_PROP_ADD2_PROP			L"고정 해제"
-#define DLG_PROP_ADD2_FILTER		L"초기화"
+#define DLG_PROP_ADD_FILTER			L"초기화"
 #define DLG_PROP_CONFIRM			L"확인"
 #define DLG_PROP_CANCEL				L"취소"
 #define DLG_PROP_TIME				L"런타임: %d시간 %d분 %d초 %03d"
 #define DLG_PROP_TIME_ACC_DENIED	L"런타임: 액세스가 거부되어 불러올 수 없습니다."
+
+//Virtual Key
+#define VK_NONE						L"(없음)"
