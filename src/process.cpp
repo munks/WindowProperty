@@ -442,6 +442,7 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	ULONG pid;
 	wchar_t path[260];
 	DWORD cnt = 260;
+	INT_PTR err;
 	
 	pid = Util_GetProcessID(hwnd);
 	
@@ -455,10 +456,14 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	*wcsrchr(path, '\\') = '\0';
 	CloseHandle(handle);
 	
-	ShellExecute(m_main, L"open", path, NULL, NULL, SW_SHOW);
 	
-	Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_FAILED, 3000);
-	Log_Message(LOG_FORMAT_NORMAL, LOG_OPEN_DIRECTORY, name, NULL);
+	
+	err = (INT_PTR)ShellExecute(m_main, L"open", path, NULL, NULL, SW_SHOW);
+	if (err > 32) {
+		Log_Message(LOG_FORMAT_NORMAL, LOG_OPEN_DIRECTORY, name, NULL);
+	} else {
+		Menu_InfoNotifyIcon(LOG_SE_FAILED, FormatSEError(err), 3000);
+	}
 }
 
 void Process_ChangeHotkey (HWND hwnd, HWND ctrl, LPCWSTR name) {
