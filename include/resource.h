@@ -22,6 +22,7 @@
 #define ID_BUTTON_CAPTURE		108
 #define ID_BUTTON_CLIP			109
 #define ID_BUTTON_HOTKEY		110
+#define ID_BUTTON_MODULE		111
 #define ID_BUTTON_ICON			130	//Menu
 #define ID_BUTTON_NAME_INPUT	140
 #define ID_BUTTON_NAME_CANCEL	141
@@ -33,7 +34,8 @@
 
 #define ID_EDIT_LOG				200
 #define ID_EDIT_ALPHA			201
-#define ID_EDIT_INPUT			202 //Change Name
+#define ID_EDIT_LIST			202
+#define ID_EDIT_INPUT			203 //Change Name
 
 #define ID_STATIC_PERCENTAGE	300
 #define ID_STATIC_SET			301

@@ -37,6 +37,7 @@ process.cpp - p_#Var
 #include "control.hpp"
 #include "menu.hpp"
 #include "log.hpp"
+#include "list.hpp"
 #include "util.hpp"
 #include "process.hpp"
 #include "dlgfunction.hpp"
