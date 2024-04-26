@@ -9,8 +9,12 @@
 #define WINDOW_LOG_CAPTION			L"Log"
 
 //Window Hotkey
-#define WINDOW_HOTKEY_NAME			L"WindowHotkey"
+#define WINDOW_HOTKEY_NAME			L"DualityFrame_Property_Hotkey"
 #define WINDOW_HOTKEY_CAPTION		L"Hotkey"
+
+//Window List
+#define WINDOW_LIST_NAME			L"DualityFrame_Property_List"
+#define WINDOW_LIST_CAPTION			L"List"
 
 //ID_BUTTON_PROP
 #define BUTTON_PROP_CAPTION			L"속성"
@@ -49,13 +53,17 @@
 #define BUTTON_HOTKEY_CAPTION		L"단축키 변경"
 #define BUTTON_HOTKEY_TOOLTIP		L"유틸리티 단축키 변경"
 
-//ID_BUTTON_ALL
+//ID_BUTTON_FILTER
 #define BUTTON_FILTER_CAPTION		L"검색 필터 변경"
 #define BUTTON_FILTER_TOOLTIP		L"검색할 창의 필터를 변경 (체크: 포함, 불확정 체크: 제외)"
 
 //ID_BUTTON_CLIP
 #define BUTTON_CLIP_CAPTION			L"커서 가두기"
 #define BUTTON_CLIP_TOOLTIP			L"창의 영역 안으로 커서를 제한"
+
+//ID_BUTTON_MODULE
+#define BUTTON_MODULE_CAPTION		L"모듈 확인"
+#define BUTTON_MODULE_TOOLTIP		L"프로세스에 로드된 모듈 목록 확인"
 
 //ID_LIST
 #define LIST_TOOLTIP				L"프로세스 목록"

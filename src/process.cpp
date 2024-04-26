@@ -12,6 +12,8 @@ DWORD p_dlgType;
 
 #define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
 
+#define AssertWin(x) if (!(x)) { Util_PrintWindowsLastError(); return; }
+
 LRESULT CALLBACK HotkeyProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	
 	#ifdef _DEBUG
@@ -306,16 +308,14 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	ListView_GetItemText(GetDlgItem(m_main, ID_LIST), c_listViewIndex, 0, p_exeFile, 30);
 	
 	if (!DialogBoxParam(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), m_main, PropProc, TYPE_DLG_PROP)) {
-		if (IsWindow(hwnd)) {
-			//Set Window Properties
-			SetWindowLongPtr(hwnd, GWL_STYLE, p_currentProp[0]);
-			SetWindowLongPtr(hwnd, GWL_EXSTYLE, p_currentProp[1]);
-			//Set TOPMOST
-			SetWindowPos(hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
-						0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
-			
-			Log_Message(LOG_FORMAT_NORMAL, LOG_SET_PROP, name, NULL);
-		}
+		AssertWin(IsWindow(hwnd));
+		//Set Window Properties
+		AssertWin(SetWindowLongPtr(hwnd, GWL_STYLE, p_currentProp[0]));
+		AssertWin(SetWindowLongPtr(hwnd, GWL_EXSTYLE, p_currentProp[1]));
+		//Set TOPMOST
+		AssertWin(SetWindowPos(	hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
+								0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED));
+		Log_Message(LOG_FORMAT_NORMAL, LOG_SET_PROP, name, NULL);
 	}
 	
 	p_tdata.hwnd = NULL;
@@ -328,8 +328,8 @@ void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	GetWindowText(hwnd, p_caption, MAX_PATH);
 	
 	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_NAME), m_main, NameProc)) {
-		SetWindowText(hwnd, p_caption);
-		
+		AssertWin(IsWindow(hwnd));
+		AssertWin(SetWindowText(hwnd, p_caption));
 		Log_Message(LOG_FORMAT_NORMAL, LOG_CHANGE_CAPTION, name, NULL);
 	}
 }
@@ -343,8 +343,8 @@ void Process_WindowOpacityChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	alpha = (BYTE)(((double)percent) / 100.0 * 255.0);
 	exstyle = GetWindowExStyle(hwnd);
 	
-	SetWindowLong(hwnd, GWL_EXSTYLE, exstyle | WS_EX_LAYERED);
-	SetLayeredWindowAttributes(hwnd, 0, alpha, LWA_ALPHA);
+	AssertWin(SetWindowLong(hwnd, GWL_EXSTYLE, exstyle | WS_EX_LAYERED));
+	AssertWin(SetLayeredWindowAttributes(hwnd, 0, alpha, LWA_ALPHA));
 	SetWindowRenew(hwnd);
 	
 	Log_Message(LOG_FORMAT_OPACITY, LOG_SET_OPACITY, name, (wchar_t*)percent);
@@ -365,8 +365,8 @@ void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 		style = (GetWindowStyle(hwnd) & ~(WS_OVERLAPPEDWINDOW | WS_DLGFRAME)) | WS_POPUP;
 	}
 	
-	SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW);
-	SetWindowLong(hwnd, GWL_STYLE, style);
+	AssertWin(SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW));
+	AssertWin(SetWindowLong(hwnd, GWL_STYLE, style));
 	ShowWindow(hwnd, isMaximized ? SW_RESTORE : SW_MAXIMIZE);
 	
 	if (!isMaximized) {
@@ -391,13 +391,9 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	
 	pid = Util_GetProcessID(hwnd);
 	
-	handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
-	if (!handle) {
-		Util_PrintWindowsLastError();
-		return;
-	}
+	AssertWin(handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid));
 	
-	IsWow64Process(handle, &iswow64);
+	AssertWin(IsWow64Process(handle, &iswow64));
 	CloseHandle(handle);
 	
 	wcscpy(exe, !iswow64 ? L"dllinjector_x64.exe" : L"dllinjector_x86.exe");
@@ -412,7 +408,7 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 			break;
 		case ID_BUTTON_CAPTURE:
 			val = 0x1;
-			GetWindowDisplayAffinity(hwnd, &wda);
+			AssertWin(GetWindowDisplayAffinity(hwnd, &wda));
 			if (!wda) {
 				val |= 0x2;
 			}
@@ -464,6 +460,31 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	} else {
 		Menu_InfoNotifyIcon(LOG_SE_FAILED, FormatSEError(err), 3000);
 	}
+}
+
+void Process_EnumModule (HWND hwnd, HWND ctrl, LPCWSTR name) {
+	HANDLE hModule = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, Util_GetProcessID(hwnd));
+	MODULEENTRY32W me32 = {0};
+	
+	if (hModule == INVALID_HANDLE_VALUE) {
+		Util_PrintWindowsLastError();
+		return;
+	}
+	List_RemoveText ();
+	
+	me32.dwSize = sizeof(MODULEENTRY32W);
+	if (Module32FirstW(hModule, &me32)) {
+		while (Module32NextW(hModule, &me32)) {
+			List_AddText(me32.szExePath);
+			List_AddText(L"\r\n");
+		}
+		CloseHandle(hModule);
+	} else {
+		Util_PrintWindowsLastError();
+		return;
+	}
+	
+	List_ShowWindow(name);
 }
 
 void Process_ChangeHotkey (HWND hwnd, HWND ctrl, LPCWSTR name) {
