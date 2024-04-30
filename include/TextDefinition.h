@@ -1,16 +1,20 @@
 #pragma once
 
 //Window Main
-#define WINDOW_MAIN_NAME			L"WindowProperty"
+#define WINDOW_MAIN_NAME			L"DualityFrame_Property"
 #define WINDOW_MAIN_CAPTION			L"Process"
 
 //Window Log
-#define WINDOW_LOG_NAME				L"WindowLog"
+#define WINDOW_LOG_NAME				L"DualityFrame_Property_Log"
 #define WINDOW_LOG_CAPTION			L"Log"
 
 //Window Hotkey
-#define WINDOW_HOTKEY_NAME			L"WindowHotkey"
+#define WINDOW_HOTKEY_NAME			L"DualityFrame_Property_Hotkey"
 #define WINDOW_HOTKEY_CAPTION		L"Hotkey"
+
+//Window List
+#define WINDOW_LIST_NAME			L"DualityFrame_Property_List"
+#define WINDOW_LIST_CAPTION			L"List"
 
 //ID_BUTTON_PROP
 #define BUTTON_PROP_CAPTION			L"Properties"
@@ -49,13 +53,17 @@
 #define BUTTON_HOTKEY_CAPTION		L"Change Hotkey"
 #define BUTTON_HOTKEY_TOOLTIP		L"Change Utilities Hotkey"
 
-//ID_BUTTON_ALL
-#define BUTTON_FILTER_CAPTION		L"Search Filter"
-#define BUTTON_FILTER_TOOLTIP		L"Change Window Search Filter (Check: Include, Indeterminate: Exclude)"
+//ID_BUTTON_FILTER
+#define BUTTON_FILTER_CAPTION		L"Change Filter"
+#define BUTTON_FILTER_TOOLTIP		L"Search Filter Change (Checked: Include, Indeterminate: Exclude)"
 
 //ID_BUTTON_CLIP
 #define BUTTON_CLIP_CAPTION			L"Clip Cursor"
-#define BUTTON_CLIP_TOOLTIP			L"Restrict Cursor To Window"
+#define BUTTON_CLIP_TOOLTIP			L"Restrict Cursor To Window Rectangle"
+
+//ID_BUTTON_MODULE
+#define BUTTON_MODULE_CAPTION		L"Module Check"
+#define BUTTON_MODULE_TOOLTIP		L"Check Loaded Module List On Process"
 
 //ID_LIST
 #define LIST_TOOLTIP				L"List Of Processes"
@@ -94,7 +102,7 @@
 
 #define LOG_CHANGE_FILTER			L"Search Filter Change"
 #define LOG_CHANGE_HOTKEY			L"Hotkey Change"
-#define LOG_NO_WINDOW				L"No Window"
+#define LOG_NO_OR_NR_WINDOW			L"No Window Or Not Responding"
 #define LOG_NO_PROGRAM				L"No Program"
 #define LOG_SET_PROP				L"Window Prop Change"
 #define LOG_CHANGE_CAPTION			L"Window Caption Change"

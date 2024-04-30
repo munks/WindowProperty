@@ -149,10 +149,10 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 							
 							//Selected Process Execution
 							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
-							if (IsWindow((HWND)_wtoi(pidhwnd))) {
+							if (IsWindow((HWND)_wtoi(pidhwnd)) && !IsHungAppWindow((HWND)_wtoi(pidhwnd))) {
 								executionFunc((HWND)_wtoi(pidhwnd), (HWND)lParam, name);
 							} else {
-								Menu_InfoNotifyIcon(name, LOG_NO_WINDOW, 3000);
+								Menu_InfoNotifyIcon(name, LOG_NO_OR_NR_WINDOW, 3000);
 							}
 						}
 						Control_RefreshListView();

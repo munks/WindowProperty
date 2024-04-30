@@ -391,7 +391,11 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	
 	pid = Util_GetProcessID(hwnd);
 	
-	AssertWin(handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid));
+	AssertWin(handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, false, pid));
+	if (!handle) {
+		Util_PrintWindowsLastError();
+		return;
+	}
 	
 	AssertWin(IsWow64Process(handle, &iswow64));
 	CloseHandle(handle);
@@ -451,8 +455,6 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	QueryFullProcessImageName(handle, 0, path, &cnt);
 	*wcsrchr(path, '\\') = '\0';
 	CloseHandle(handle);
-	
-	
 	
 	err = (INT_PTR)ShellExecute(m_main, L"open", path, NULL, NULL, SW_SHOW);
 	if (err > 32) {
