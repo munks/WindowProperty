@@ -102,7 +102,7 @@
 
 #define LOG_CHANGE_FILTER			L"검색 필터 변경"
 #define LOG_CHANGE_HOTKEY			L"단축키 변경"
-#define LOG_NO_WINDOW				L"창 없음"
+#define LOG_NO_OR_NR_WINDOW			L"창이 없거나 창이 응답 없음 상태"
 #define LOG_NO_PROGRAM				L"프로그램 없음"
 #define LOG_SET_PROP				L"창 설정 변경"
 #define LOG_CHANGE_CAPTION			L"창 제목 변경"
