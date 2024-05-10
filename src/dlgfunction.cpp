@@ -32,40 +32,6 @@ void DlgFunction_ButtonSetType (HWND btn, LONG_PTR type) {
 	SetWindowLongPtr(btn, GWL_STYLE, style | type);
 }
 
-void DlgFunction_DateOperate (FILETIME* src, FILETIME* target) {
-	ULARGE_INTEGER tmp[2];
-	
-	tmp[0].LowPart = src->dwLowDateTime;
-	tmp[0].HighPart = src->dwHighDateTime;
-	tmp[1].LowPart = target->dwLowDateTime;
-	tmp[1].HighPart = target->dwHighDateTime;
-	
-	tmp[0].QuadPart -= tmp[1].QuadPart;
-	
-	src->dwLowDateTime = tmp[0].LowPart;
-	src->dwHighDateTime = tmp[0].HighPart;
-}
-
-void DlgFunction_FileTimeToTime (FILETIME* src, SYSTEMTIME* target) {
-	int sec;
-	int milsec;
-	int min;
-	int hour;
-	
-	sec = src->dwHighDateTime * 430;
-	sec += src->dwLowDateTime / (1000 * 10000);
-	milsec = (src->dwLowDateTime % (1000 * 10000)) / 10000;
-	min = sec / 60;
-	sec %= 60;
-	hour = min / 60;
-	min %= 60;
-	
-	target->wMilliseconds = milsec;
-	target->wSecond = sec;
-	target->wMinute = min;
-	target->wHour = hour;
-}
-
 //External
 
 void DlgFunction_ResetFilter (HWND hwnd) {
@@ -244,8 +210,8 @@ DWORD WINAPI DlgFunction_SystemTimeLoop (LPVOID param) {
 	
 	while (check) {
 		GetSystemTimeAsFileTime(&ftCurrent);
-		DlgFunction_DateOperate(&ftCurrent, &ftOrigin);
-		DlgFunction_FileTimeToTime(&ftCurrent, &calctime);
+		Util_DateOperate(&ftCurrent, &ftOrigin);
+		Util_FileTimeToTime(&ftCurrent, &calctime);
 		swprintf(timetext, DLG_PROP_TIME, calctime.wHour, calctime.wMinute, calctime.wSecond, calctime.wMilliseconds);
 		SetWindowText(display, timetext);
 		Sleep(125);

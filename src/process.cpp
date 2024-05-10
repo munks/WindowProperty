@@ -465,7 +465,7 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 }
 
 void Process_EnumModule (HWND hwnd, HWND ctrl, LPCWSTR name) {
-	HANDLE hModule = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, Util_GetProcessID(hwnd));
+	HANDLE hModule = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, Util_GetProcessID(hwnd));
 	MODULEENTRY32W me32 = {0};
 	
 	if (hModule == INVALID_HANDLE_VALUE) {
@@ -487,6 +487,12 @@ void Process_EnumModule (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	}
 	
 	List_ShowWindow(name);
+}
+
+void Process_RuntimeChecker (HWND hwnd, HWND ctrl, LPCWSTR name) {
+	ULONG pid = Util_GetProcessID(hwnd);
+	
+	Thread_CreateThread(pid);
 }
 
 void Process_ChangeHotkey (HWND hwnd, HWND ctrl, LPCWSTR name) {

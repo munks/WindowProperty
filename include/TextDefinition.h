@@ -65,6 +65,10 @@
 #define BUTTON_MODULE_CAPTION		L"Module Check"
 #define BUTTON_MODULE_TOOLTIP		L"Check Loaded Module List On Process"
 
+//ID_BUTTON_RUNTIME
+#define BUTTON_RUNTIME_CAPTION		L"Check Runtime"
+#define BUTTON_RUNTIME_TOOLTIP		L"When Process Terminated, Record Start Time, End Time, Runtime"
+
 //ID_LIST
 #define LIST_TOOLTIP				L"List Of Processes"
 
@@ -124,6 +128,10 @@
 #define DLG_PROP_CANCEL				L"Cancel"
 #define DLG_PROP_TIME				L"Runtime: %dh %dm %ds %03d"
 #define DLG_PROP_TIME_ACC_DENIED	L"Runtime: Unable to load because access denied."
+#define DLG_THREAD_TIME				L"The process is already in detection state."
+#define DLG_THREAD_HOUR				"h"
+#define DLG_THREAD_MINUTE			"m"
+#define DLG_THREAD_SECOND			"s"
 
 //Virtual Key
 #define VK_NONE						L"(None)"
