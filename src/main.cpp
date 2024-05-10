@@ -17,6 +17,7 @@ void Main_Close () {
 	RegCloseKey(m_regkey);
 	RegCloseKey(m_regset);
 	Menu_RemoveNotifyIcon();
+	Thread_Close();
 	FreeLibrary(c_comctlModule);
 	PostQuitMessage(0);
 }
@@ -110,6 +111,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				DialogEvent(ID_BUTTON_CAPTURE)
 				DialogEvent(ID_BUTTON_OPEN)
 				DialogEvent(ID_BUTTON_MODULE)
+				DialogEvent(ID_BUTTON_RUNTIME)
 				DialogEvent(ID_BUTTON_HOTKEY)
 				DialogEvent(ID_BUTTON_FILTER) {
 					if (EventMessage() == BN_CLICKED) {
@@ -133,6 +135,8 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 								executionFunc = Process_OpenDirectory; break;
 							case ID_BUTTON_MODULE:
 								executionFunc = Process_EnumModule; break;
+							case ID_BUTTON_RUNTIME:
+								executionFunc = Process_RuntimeChecker; break;
 							case ID_BUTTON_HOTKEY:
 								executionFunc = Process_ChangeHotkey; absolute = true; break;
 							case ID_BUTTON_FILTER:
@@ -288,6 +292,9 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	//Control Init
 	Control_InitDLL();
 	
+	//Thread Init
+	Thread_Init();
+	
 	//Create Window Class (Main)
 	wc.cbSize = sizeof(wc);
 	wc.lpfnWndProc = MainProc;
@@ -301,7 +308,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	//Create Main Window
 	m_main = CreateWindowEx(WS_EX_TOPMOST, WINDOW_MAIN_NAME, WINDOW_MAIN_CAPTION,
 							WS_OVERLAPPED | WS_CAPTION | WS_POPUPWINDOW,
-							CW_USEDEFAULT, CW_USEDEFAULT, 600, 540,
+							CW_USEDEFAULT, CW_USEDEFAULT, 600, 580,
 							NULL, NULL, hInstance, NULL);
 	Util_CheckError(m_main);
 	
@@ -353,14 +360,17 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	//Create Button (MODULE)
 	CreateButtonMacro(m_main, MODULE, false, 475, 390, 100, 30);
 	
+	//Create Button (MODULE)
+	CreateButtonMacro(m_main, RUNTIME, false, 475, 430, 100, 30);
+	
 	//Create Button (MOVE)
-	CreateButtonMacro(m_main, MOVE, true, 475, 430, 100, 30);
+	CreateButtonMacro(m_main, MOVE, true, 475, 470, 100, 30);
 	
 	//Create Button (CLIP)
-	CreateButtonMacro(m_main, CLIP, true, 475, 470, 100, 30);
+	CreateButtonMacro(m_main, CLIP, true, 475, 510, 100, 30);
 	
 	//Create List-View
-	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 480, ID_LIST);
+	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 520, ID_LIST);
 	Control_RefreshListView();
 	
 	//Add System Tray Notify Icon

@@ -13,6 +13,8 @@ bool operator!=(RECT, RECT);
 void Util_PrintInt (int);
 void Util_PrintString (const wchar_t*);
 DWORD Util_GetWDAState (HWND);
+void Util_DateOperate (FILETIME*, FILETIME*);
+void Util_FileTimeToTime (FILETIME*, SYSTEMTIME*);
 
 extern LONG_PTR u_filter[2][2];
 

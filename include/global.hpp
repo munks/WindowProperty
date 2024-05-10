@@ -41,6 +41,7 @@ process.cpp - p_#Var
 #include "util.hpp"
 #include "process.hpp"
 #include "dlgfunction.hpp"
+#include "thread.hpp"
 #include "hook.hpp"
 #include "vk.hpp"
 #include "resource.h"

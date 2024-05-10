@@ -65,6 +65,10 @@
 #define BUTTON_MODULE_CAPTION		L"모듈 확인"
 #define BUTTON_MODULE_TOOLTIP		L"프로세스에 로드된 모듈 목록 확인"
 
+//ID_BUTTON_RUNTIME
+#define BUTTON_RUNTIME_CAPTION		L"런타임 체크"
+#define BUTTON_RUNTIME_TOOLTIP		L"프로세스 종료 시 시작 시간, 종료 시간, 가동 시간을 기록합니다"
+
 //ID_LIST
 #define LIST_TOOLTIP				L"프로세스 목록"
 
@@ -124,6 +128,10 @@
 #define DLG_PROP_CANCEL				L"취소"
 #define DLG_PROP_TIME				L"런타임: %d시간 %d분 %d초 %03d"
 #define DLG_PROP_TIME_ACC_DENIED	L"런타임: 액세스가 거부되어 불러올 수 없습니다."
+#define DLG_THREAD_TIME				L"프로세스가 이미 탐지 상태입니다."
+#define DLG_THREAD_HOUR				"시간"
+#define DLG_THREAD_MINUTE			"분"
+#define DLG_THREAD_SECOND			"초"
 
 //Virtual Key
 #define VK_NONE						L"(없음)"
