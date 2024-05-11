@@ -53,8 +53,9 @@ process.cpp - p_#Var
 //Macro
 #define IsTopMost(h) ((GetWindowLong(h, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0)
 #define HasCaption(h) ((GetWindowLong(h, GWL_STYLE) & WS_CAPTION) != 0)
-
 #define _repeat(v, i) for (unsigned int v = 0; v < i; v++)
+#define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
+#define AssertWin(x) if (!(x)) { Util_PrintWindowsLastError(); return; }
 
 //Process Loop Macro
 /* Usage:
