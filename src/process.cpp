@@ -10,10 +10,6 @@ DWORD p_dlgType;
 
 //Internal
 
-#define SetWindowRenew(h) SetWindowPos(h, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED)
-
-#define AssertWin(x) if (!(x)) { Util_PrintWindowsLastError(); return; }
-
 LRESULT CALLBACK HotkeyProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	
 	#ifdef _DEBUG
@@ -490,9 +486,7 @@ void Process_EnumModule (HWND hwnd, HWND ctrl, LPCWSTR name) {
 }
 
 void Process_RuntimeChecker (HWND hwnd, HWND ctrl, LPCWSTR name) {
-	ULONG pid = Util_GetProcessID(hwnd);
-	
-	Thread_CreateThread(pid);
+	Thread_CreateThread(hwnd, name);
 }
 
 void Process_ChangeHotkey (HWND hwnd, HWND ctrl, LPCWSTR name) {

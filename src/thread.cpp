@@ -27,32 +27,30 @@ LPPTDATA Thread_GetEmptyThread () {
 	return NULL;
 }
 
-void Thread_WriteResult (HANDLE process) {
-	char path[MAX_PATH];
+void Thread_WriteResult (LPPTDATA data) {
 	char output[MAX_PATH];
 	DWORD cnt;
 	FILETIME start, end, ft[2];
 	SYSTEMTIME convert;
 	
-	if (!GetProcessImageFileNameA(process, path, MAX_PATH)) { Util_PrintWindowsLastError(); } //Data - Path
-	GetProcessTimes(process, &start, &end, &ft[0], &ft[1]); //Data - Runtime
+	GetProcessTimes(data->process, &start, &end, &ft[0], &ft[1]); //Data - Runtime
 	
-	sprintf(output, "*%s\r\n", strrchr(path, '\\') + 1);
+	sprintf(output, "%s(%s)\r\n", data->name, data->winname);
 	WriteFile(t_file, output, strlen(output), &cnt, NULL); //Write - Path
 	
 	FileTimeToLocalFileTime(&start, &ft[0]);
 	FileTimeToSystemTime(&ft[0], &convert);
-	sprintf(output, "Start Time: %04d-%02d-%02d %02d:%02d:%02d\r\n", convert.wYear, convert.wMonth, convert.wDay, convert.wHour, convert.wMinute, convert.wSecond);
+	sprintf(output, "*Start Time: %04d-%02d-%02d %02d:%02d:%02d\r\n", convert.wYear, convert.wMonth, convert.wDay, convert.wHour, convert.wMinute, convert.wSecond);
 	WriteFile(t_file, output, strlen(output), &cnt, NULL); //Write - Start Time
 	
 	FileTimeToLocalFileTime(&end, &ft[1]);
 	FileTimeToSystemTime(&ft[1], &convert);
-	sprintf(output, "End Time: %04d-%02d-%02d %02d:%02d:%02d\r\n", convert.wYear, convert.wMonth, convert.wDay, convert.wHour, convert.wMinute, convert.wSecond);
+	sprintf(output, "*End Time: %04d-%02d-%02d %02d:%02d:%02d\r\n", convert.wYear, convert.wMonth, convert.wDay, convert.wHour, convert.wMinute, convert.wSecond);
 	WriteFile(t_file, output, strlen(output), &cnt, NULL); //Write - End Time
 	
 	Util_DateOperate(&end, &start);
 	Util_FileTimeToTime(&end, &convert);
-	sprintf(output, "Total Time: %d%s %d%s %d%s\r\n\r\n", convert.wHour, DLG_THREAD_HOUR, convert.wMinute, DLG_THREAD_MINUTE, convert.wSecond, DLG_THREAD_SECOND);
+	sprintf(output, "*Total Time: %d%s %d%s %d%s\r\n\r\n", convert.wHour, DLG_THREAD_HOUR, convert.wMinute, DLG_THREAD_MINUTE, convert.wSecond, DLG_THREAD_SECOND);
 	WriteFile(t_file, output, strlen(output), &cnt, NULL); //Write - Total Time
 }
 
@@ -62,7 +60,7 @@ DWORD Thread_Run (LPVOID lpptdata) {
 	while (true) {
 		WaitForSingleObject(data->event, INFINITE);
 		WaitForSingleObject(data->process, INFINITE);
-		Thread_WriteResult(data->process);
+		Thread_WriteResult(data);
 		CloseHandle(data->process);
 		data->process = NULL;
 		data->pid = 0;
@@ -72,7 +70,8 @@ DWORD Thread_Run (LPVOID lpptdata) {
 }
 
 //External
-void Thread_CreateThread (ULONG pid) {
+void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
+	ULONG pid = Util_GetProcessID(hwnd);
 	LPPTDATA check;
 	HANDLE process;
 	LPPTDATA temp;
@@ -92,7 +91,7 @@ void Thread_CreateThread (ULONG pid) {
 		GetCurrentDirectory(MAX_PATH, path);
 		GetLocalTime(&time);
 		swprintf(file, L"%s\\ProcessTimeRecord %04d-%02d-%02d %02d-%02d-%02d.txt", path, time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond);
-		t_file = CreateFile(file, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		t_file = CreateFile(file, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (!t_file) { Util_PrintWindowsLastError(); }
 	}
 	
@@ -110,12 +109,18 @@ void Thread_CreateThread (ULONG pid) {
 		temp->thread = CreateThread(NULL, 0, Thread_Run, temp, 0, NULL);
 		temp->process = process;
 		temp->pid = pid;
+		GetWindowText(hwnd, path, 260);
+		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, path, -1, temp->winname, 260, NULL, NULL));
+		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, name, -1, temp->name, 260, NULL, NULL));
 		SetEvent(temp->event);
 		t_chainend->next = temp;
 		t_chainend = temp;
 	} else {
 		check->process = process;
 		check->pid = pid;
+		GetWindowText(hwnd, path, 260);
+		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, path, -1, check->winname, 260, NULL, NULL));
+		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, name, -1, check->name, 260, NULL, NULL));
 		SetEvent(check->event);
 	}
 }
