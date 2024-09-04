@@ -22,3 +22,4 @@ extern HINSTANCE m_hInstance;
 extern HFONT m_font;
 extern HKEY m_regkey;
 extern HKEY m_regset;
+extern HKEY m_regrec;
