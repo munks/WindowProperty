@@ -89,6 +89,7 @@
 #define MENU_CLIP_TEXT				L"커서 가두기"
 #define MENU_CLIP_TEXT_FORMAT		L"커서 가두기 (%ls)"
 #define MENU_START_TEXT				L"시작 프로그램에 추가"
+#define MENU_RUNTIME_TEXT			L"컨텍스트 메뉴에 런타임 체크 추가 (.exe)"
 #define MENU_LOG_TEXT				L"로그"
 #define MENU_CLOSE_TEXT				L"닫기"
 

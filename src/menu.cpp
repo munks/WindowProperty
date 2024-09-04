@@ -11,7 +11,7 @@ UINT_PTR me_timer = 0;
 
 //Internal
 
-void SetStartup (BOOL add) {
+void Menu_SetStartup (BOOL add) {
 	HKEY tmpkey;
 	wchar_t path[MAX_PATH];
 	wchar_t regval[MAX_PATH];
@@ -26,6 +26,32 @@ void SetStartup (BOOL add) {
 		RegSetValueEx(tmpkey, L"WindowProperty", 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
 	}
 	RegCloseKey(tmpkey);
+}
+
+void Menu_SetRTContext (BOOL add) {
+	HKEY tmpkey;
+	HKEY tmpkey2;
+	wchar_t path[MAX_PATH];
+	wchar_t regval[MAX_PATH];
+	
+	GetModuleFileName(NULL, path, MAX_PATH);
+	
+	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
+	if (!add) {
+		RegDeleteTree(tmpkey, NULL);
+		RegCloseKey(tmpkey);
+		RegDeleteKey(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker");
+	} else {
+		wcscpy(regval, BUTTON_RUNTIME_CAPTION);
+		RegSetValueEx(tmpkey, NULL, 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
+		swprintf(regval, L"\"%ls\",0", path);
+		RegSetValueEx(tmpkey, L"Icon", 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
+		RegCreateKeyEx(tmpkey, L"command", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey2, NULL);
+		swprintf(regval, L"\"%ls\" -rtcheck \"%%1\"", path);
+		RegSetValueEx(tmpkey2, NULL, 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
+		RegCloseKey(tmpkey);
+		RegCloseKey(tmpkey2);
+	}
 }
 
 void Menu_DeleteNotifyIcon (HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
@@ -77,7 +103,8 @@ void Menu_ExecuteNotifyEvent (WORD message) {
 		}
 		case TN_MENU_MOVE:
 		case TN_MENU_CLIP:
-		case TN_MENU_INIT: {
+		case TN_MENU_INIT:
+		case TN_MENU_RT: {
 			me_mi.fMask = MIIM_STATE;
 			GetMenuItemInfo(me_menu, MAKELONG(ID_BUTTON_ICON, message), false, &me_mi);
 			me_mi.fState ^= MFS_CHECKED;
@@ -91,7 +118,10 @@ void Menu_ExecuteNotifyEvent (WORD message) {
 					Hook_ClipHotkeyRegister(changed);
 					break;
 				case TN_MENU_INIT:
-					SetStartup(changed);
+					Menu_SetStartup(changed);
+					break;
+				case TN_MENU_RT:
+					Menu_SetRTContext(changed);
 					break;
 			}
 			break;
@@ -145,6 +175,7 @@ void Menu_MakeMenu () {
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_MOVE), MENU_MOVE_TEXT);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_CLIP), MENU_CLIP_TEXT);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_INIT), MENU_START_TEXT);
+	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_RT), MENU_RUNTIME_TEXT);
 	AppendMenu(me_menu, MF_SEPARATOR, 0, NULL);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_LOG), MENU_LOG_TEXT);
 	AppendMenu(me_menu, MF_SEPARATOR, 0, NULL);

@@ -89,6 +89,7 @@
 #define MENU_CLIP_TEXT				L"Clip Cursor"
 #define MENU_CLIP_TEXT_FORMAT		L"Clip Cursor (%ls)"
 #define MENU_START_TEXT				L"Add Startup"
+#define MENU_RUNTIME_TEXT			L"Add Check Runtime On Context Menu (.exe)"
 #define MENU_LOG_TEXT				L"Log"
 #define MENU_CLOSE_TEXT				L"Close"
 

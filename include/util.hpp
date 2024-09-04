@@ -1,13 +1,14 @@
 #pragma once
 
 #define Util_CheckError(t) CheckErrorFunc(t, __FILE__, __LINE__, #t)
+#define Util_PrintWindowsLastError() Util_PrintWindowsLastErrorInternal(__FILE__, __FUNCTION__, __LINE__)
 bool CheckErrorFunc (void*, LPCSTR, int, LPCSTR);
 ULONG Util_GetProcessID (HWND);
 bool Util_WindowFilter (HWND);
 DWORD Util_GetHotkey (DWORD, int);
 LPWSTR Util_GetHotkeyString (DWORD);
 LSTATUS Util_SetHotkey (DWORD, DWORD);
-void Util_PrintWindowsLastError ();
+void Util_PrintWindowsLastErrorInternal (LPCSTR, LPCSTR, int);
 bool operator==(RECT, RECT);
 bool operator!=(RECT, RECT);
 void Util_PrintInt (int);

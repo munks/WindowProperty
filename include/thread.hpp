@@ -13,5 +13,6 @@ typedef struct PTDATA {
 } PTDATA, *LPPTDATA;
 
 void Thread_CreateThread (HWND, LPCWSTR);
+void Thread_CreateThreadProcess (LPCWSTR);
 void Thread_Init ();
 void Thread_Close ();
