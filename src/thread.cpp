@@ -16,8 +16,10 @@ void Thread_OutputFileCreate () {
 		t_createfirst = false;
 		
 		GetCurrentDirectory(MAX_PATH, path);
+		swprintf(file, L"%ls\\record", path);
+		CreateDirectory(file, NULL);
 		GetLocalTime(&time);
-		swprintf(file, L"%ls\\ProcessTimeRecord %04d-%02d-%02d %02d-%02d-%02d.txt", path, time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond);
+		swprintf(file, L"%ls\\record\\ProcessTimeRecord %04d-%02d-%02d %02d-%02d-%02d.txt", path, time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond);
 		t_file = CreateFile(file, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (t_file == INVALID_HANDLE_VALUE) { Util_PrintWindowsLastError(); }
 	}
@@ -46,6 +48,7 @@ LPPTDATA Thread_GetEmptyThread () {
 void Thread_WriteResult (LPPTDATA data) {
 	char output[MAX_PATH];
 	DWORD cnt;
+	DWORD acctime = 0;
 	FILETIME start, end, ft[2];
 	SYSTEMTIME convert;
 	
@@ -66,8 +69,17 @@ void Thread_WriteResult (LPPTDATA data) {
 	
 	Util_DateOperate(&end, &start);
 	Util_FileTimeToTime(&end, &convert);
-	sprintf(output, "*Total Time: %d%s %d%s %d%s\r\n\r\n", convert.wHour, DLG_THREAD_HOUR, convert.wMinute, DLG_THREAD_MINUTE, convert.wSecond, DLG_THREAD_SECOND);
+	sprintf(output, "*Total Time: %d%s %d%s %d%s\r\n", convert.wHour, DLG_THREAD_HOUR, convert.wMinute, DLG_THREAD_MINUTE, convert.wSecond, DLG_THREAD_SECOND);
 	WriteFile(t_file, output, strlen(output), &cnt, NULL); //Write - Total Time
+	
+	RegGetValue(m_regrec, NULL, data->path, RRF_RT_REG_DWORD, NULL, &acctime, &(cnt = sizeof(DWORD)));
+	acctime += convert.wSecond;
+	acctime += convert.wMinute * 60;
+	acctime += convert.wHour * 3600;
+	RegSetValueEx(m_regrec, data->path, 0, REG_DWORD, (BYTE*)&acctime, sizeof(DWORD));
+	
+	sprintf(output, "*Accumulated Time: %d%s %d%s %d%s\r\n\r\n", acctime / 3600, DLG_THREAD_HOUR, (acctime % 3600) / 60, DLG_THREAD_MINUTE, (acctime % 3600) % 60, DLG_THREAD_SECOND);
+	WriteFile(t_file, output, strlen(output), &cnt, NULL); //Write - Accumuulated Time
 }
 
 DWORD Thread_Run (LPVOID lpptdata) {
@@ -91,6 +103,7 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 	LPPTDATA check;
 	HANDLE process;
 	LPPTDATA temp;
+	DWORD cnt;
 	wchar_t path[MAX_PATH];
 	
 	process = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
@@ -115,6 +128,7 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 		temp->thread = CreateThread(NULL, 0, Thread_Run, temp, 0, NULL);
 		temp->process = process;
 		temp->pid = pid;
+		QueryFullProcessImageName(process, 0, temp->path, &cnt);
 		GetWindowText(hwnd, path, 260);
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, path, -1, temp->winname, 260, NULL, NULL));
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, name, -1, temp->name, 260, NULL, NULL));
@@ -124,6 +138,7 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 	} else {
 		check->process = process;
 		check->pid = pid;
+		QueryFullProcessImageName(process, 0, check->path, &cnt);
 		GetWindowText(hwnd, path, 260);
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, path, -1, check->winname, 260, NULL, NULL));
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, name, -1, check->name, 260, NULL, NULL));
@@ -161,6 +176,7 @@ void Thread_CreateThreadProcess (LPCWSTR filepath) {
 		temp->thread = CreateThread(NULL, 0, Thread_Run, temp, 0, NULL);
 		temp->process = pi.hProcess;
 		temp->pid = pi.dwProcessId;
+		wcscpy(temp->path, filepath);
 		strcpy(temp->winname, "Direct measurement");
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, filepath, -1, temp->name, 260, NULL, NULL));
 		SetEvent(temp->event);
@@ -169,6 +185,7 @@ void Thread_CreateThreadProcess (LPCWSTR filepath) {
 	} else {
 		check->process = pi.hProcess;
 		check->pid = pi.dwProcessId;
+		wcscpy(check->path, filepath);
 		strcpy(check->winname, "Direct measurement");
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, filepath, -1, check->name, 260, NULL, NULL));
 		SetEvent(check->event);

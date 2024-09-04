@@ -5,6 +5,7 @@ typedef struct PTDATA PTDATA, *LPPTDATA;
 typedef struct PTDATA {
 	char name[260];
 	char winname[260];
+	wchar_t path[260];
 	ULONG pid;
 	HANDLE thread;
 	HANDLE process;

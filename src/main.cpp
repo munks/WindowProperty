@@ -8,6 +8,7 @@ HINSTANCE m_hInstance;
 HFONT m_font;
 HKEY m_regkey;
 HKEY m_regset;
+HKEY m_regrec;
 
 //External
 
@@ -16,6 +17,7 @@ void Main_Close () {
 	DeleteObject(m_font);
 	RegCloseKey(m_regkey);
 	RegCloseKey(m_regset);
+	RegCloseKey(m_regrec);
 	Menu_RemoveNotifyIcon();
 	Thread_Close();
 	FreeLibrary(c_comctlModule);
@@ -311,6 +313,7 @@ int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLi
 	//Open Registry
 	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Duality\\WindowProperty", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regkey, NULL);
 	RegCreateKeyEx(m_regkey, L"Settings", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regset, NULL);
+	RegCreateKeyEx(m_regkey, L"Records", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regrec, NULL);
 	
 	Main_VersionCheck(1);
 	
