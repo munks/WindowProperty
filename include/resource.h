@@ -99,7 +99,8 @@
 #define TN_MENU_MOVE			0
 #define TN_MENU_CLIP			1
 #define TN_MENU_INIT			2
-#define TN_MENU_CLOSE			3
-#define TN_MENU_LOG				4
+#define TN_MENU_RT				3
+#define TN_MENU_CLOSE			4
+#define TN_MENU_LOG				5
 
 #define TN_CLICK				100

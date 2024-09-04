@@ -14,7 +14,6 @@ process.cpp - p_#Var
 #pragma once
 
 //Definition
-#define UNICODE
 #define WINVER 0x0606
 #undef __STRICT_ANSI__
 #define WM_ICONNOTIFY 0x8001

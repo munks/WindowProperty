@@ -56,6 +56,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	wchar_t pidhwnd[10];
 	wchar_t text[4];
 	wchar_t name[30];
+	wchar_t path[MAX_PATH];
 	BYTE alpha;
 	int value;
 	BOOL changed;
@@ -88,6 +89,13 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 					SetDlgItemText(hwnd, ID_EDIT_ALPHA, text);
 					break;
 				}
+			}
+			break;
+		}
+		WindowEvent(WM_COPYDATA) {
+			if (((COPYDATASTRUCT*)lParam)->dwData == 1) {
+				wcscpy(path, (LPWSTR)((COPYDATASTRUCT*)lParam)->lpData);
+				Thread_CreateThreadProcess(path);
 			}
 			break;
 		}
@@ -255,15 +263,42 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow) {
+int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow) {
+	bool wndHide = false;
 	BYTE regval;
 	DWORD size;
 	WNDCLASSEX wc = {};
+	HWND hwndFind;
+	LPWSTR* cmdArgs;
+	int cmdArgc;
+	COPYDATASTRUCT cds = {};
+	HKEY hkey;
+	LSTATUS result;
+	
+	//Command Line Processing
+	cmdArgs = CommandLineToArgvW(pCmdLine, &cmdArgc);
+	if (cmdArgs != NULL) {
+		for (int i = 0; i < cmdArgc; i++) {
+			wprintf(L"Command Line: %ls\n", cmdArgs[i]);
+			if (wcscmp(cmdArgs[i], L"-hide") == 0) { wndHide = true; }
+			if (wcscmp(cmdArgs[i], L"-rtcheck") == 0) {
+				i++;
+				if (i < cmdArgc) {
+					wprintf(L"Command Line: %ls\n", cmdArgs[i]);
+					cds.dwData = 1;
+					cds.cbData = wcslen(cmdArgs[i]) * sizeof(wchar_t);
+					cds.lpData = cmdArgs[i];
+				}
+			}
+		}
+	}
 	
 	//Duplicate Prevent
-	if (FindWindow(WINDOW_MAIN_NAME, NULL) != NULL) {
-		ShowWindow(FindWindow(WINDOW_MAIN_NAME, NULL), SW_RESTORE);
-		SetForegroundWindow(FindWindow(WINDOW_MAIN_NAME, NULL));
+	hwndFind = FindWindow(WINDOW_MAIN_NAME, NULL);
+	if (hwndFind != NULL) {
+		SendMessage(hwndFind, WM_COPYDATA, 0, (LPARAM)&cds);
+		ShowWindow(hwndFind, SW_RESTORE);
+		SetForegroundWindow(hwndFind);
 		return 0;
 	}
 	
@@ -294,6 +329,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	
 	//Thread Init
 	Thread_Init();
+	
+	//Runtime Checker Start
+	if (cds.dwData == 1) {
+		Thread_CreateThreadProcess((LPCWSTR)cds.lpData);
+	}
 	
 	//Create Window Class (Main)
 	wc.cbSize = sizeof(wc);
@@ -387,12 +427,19 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine
 	
 	//Get Registry (INIT)
 	Menu_SetMenuState(TN_MENU_INIT, !RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", L"WindowProperty", RRF_RT_REG_SZ, NULL, NULL, NULL));
+	result = RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, KEY_ALL_ACCESS, &hkey);
+	Menu_SetMenuState(TN_MENU_RT, result == ERROR_SUCCESS);
+	if (result == ERROR_SUCCESS) {
+		RegCloseKey(hkey);
+	}
 	
 	//Show Window (Main)
 	UpdateWindow(m_main);
-	if (strcmp(pCmdLine, "-hide")) {
+	if (!wndHide) {
 		ShowWindow(m_main, SW_SHOW);
 	}
+	
+	LocalFree(cmdArgs);
 	
 	//Message Loop
 	MSG msg = {};

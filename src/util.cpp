@@ -171,7 +171,8 @@ LSTATUS Util_SetHotkey (DWORD hotkey, DWORD vk) {
 	return RegSetValueEx(m_regkey, keystr, 0, REG_DWORD, (BYTE*)&vk, sizeof(DWORD));
 }
 
-void Util_PrintWindowsLastError () {
+void Util_PrintWindowsLastErrorInternal (LPCSTR file, LPCSTR func, int line) {
+	wchar_t txt[260];
 	LPWSTR msg;
 	
 	FormatMessage(	FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -179,8 +180,8 @@ void Util_PrintWindowsLastError () {
 					FORMAT_MESSAGE_IGNORE_INSERTS,
 					NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 					(LPWSTR)&msg, 0, NULL);
-	
-	MessageBox(NULL, msg, L"GetLastError", MB_OK);
+	swprintf(txt, L"In File: %s\nIn Function: %s\nIn Line: %d\nError Code: %d\n%ls", file, func, line, GetLastError(), msg);
+	MessageBox(NULL, txt, L"GetLastError", MB_OK);
 	
 	LocalFree(msg);
 }

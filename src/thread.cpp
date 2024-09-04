@@ -7,6 +7,22 @@ HANDLE t_file;
 
 //Internal
 
+void Thread_OutputFileCreate () {
+	wchar_t path[MAX_PATH];
+	wchar_t file[MAX_PATH];
+	SYSTEMTIME time;
+	
+	if (t_createfirst) {
+		t_createfirst = false;
+		
+		GetCurrentDirectory(MAX_PATH, path);
+		GetLocalTime(&time);
+		swprintf(file, L"%ls\\ProcessTimeRecord %04d-%02d-%02d %02d-%02d-%02d.txt", path, time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond);
+		t_file = CreateFile(file, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (t_file == INVALID_HANDLE_VALUE) { Util_PrintWindowsLastError(); }
+	}
+}
+
 LPPTDATA Thread_CheckPID (ULONG pid) {
 	LPPTDATA data = t_chainstart;
 	
@@ -76,8 +92,6 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 	HANDLE process;
 	LPPTDATA temp;
 	wchar_t path[MAX_PATH];
-	wchar_t file[MAX_PATH];
-	SYSTEMTIME time;
 	
 	process = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
 	if (!process) {
@@ -85,15 +99,7 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 		return;
 	}
 	
-	if (t_createfirst) {
-		t_createfirst = false;
-		
-		GetCurrentDirectory(MAX_PATH, path);
-		GetLocalTime(&time);
-		swprintf(file, L"%s\\ProcessTimeRecord %04d-%02d-%02d %02d-%02d-%02d.txt", path, time.wYear, time.wMonth, time.wDay, time.wHour, time.wMinute, time.wSecond);
-		t_file = CreateFile(file, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (!t_file) { Util_PrintWindowsLastError(); }
-	}
+	Thread_OutputFileCreate();
 	
 	check = Thread_CheckPID(pid);
 	if (check) {
@@ -121,6 +127,50 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 		GetWindowText(hwnd, path, 260);
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, path, -1, check->winname, 260, NULL, NULL));
 		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, name, -1, check->name, 260, NULL, NULL));
+		SetEvent(check->event);
+	}
+}
+
+void Thread_CreateThreadProcess (LPCWSTR filepath) {
+	STARTUPINFO si = {};
+	PROCESS_INFORMATION pi = {};
+	LPPTDATA check;
+	LPPTDATA temp;
+	
+	si.cb = sizeof(si);
+	CreateProcess(filepath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+	
+	if (!pi.hProcess) {
+		Util_PrintWindowsLastError();
+		return;
+	}
+	
+	Thread_OutputFileCreate();
+	
+	check = Thread_CheckPID(pi.dwProcessId);
+	if (check) {
+		MessageBox(NULL, DLG_THREAD_TIME, L"Running...", MB_OK);
+		return;
+	}
+	
+	check = Thread_GetEmptyThread();
+	if (!check) {
+		temp = (LPPTDATA)malloc(sizeof(PTDATA));
+		ZeroMemory(temp, sizeof(PTDATA));
+		temp->event = CreateEvent(NULL, FALSE, FALSE, NULL);
+		temp->thread = CreateThread(NULL, 0, Thread_Run, temp, 0, NULL);
+		temp->process = pi.hProcess;
+		temp->pid = pi.dwProcessId;
+		strcpy(temp->winname, "Direct measurement");
+		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, filepath, -1, temp->name, 260, NULL, NULL));
+		SetEvent(temp->event);
+		t_chainend->next = temp;
+		t_chainend = temp;
+	} else {
+		check->process = pi.hProcess;
+		check->pid = pi.dwProcessId;
+		strcpy(check->winname, "Direct measurement");
+		AssertWin(WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, filepath, -1, check->name, 260, NULL, NULL));
 		SetEvent(check->event);
 	}
 }
