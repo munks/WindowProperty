@@ -17,7 +17,7 @@ void Menu_SetStartup (BOOL add) {
 	wchar_t regval[MAX_PATH];
 	
 	GetModuleFileName(NULL, path, MAX_PATH);
-	swprintf(regval, L"\"%s\" -hide", path);
+	swprintf(regval, L"\"%ls\" -hide", path);
 	
 	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
 	if (!add) {

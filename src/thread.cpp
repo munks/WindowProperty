@@ -30,7 +30,7 @@ LPPTDATA Thread_CheckPID (ULONG pid) {
 	
 	do {
 		if (data->pid == pid) { return data; }
-	} while (data->next);
+	} while ((data = data->next) != NULL);
 	
 	return NULL;
 }
@@ -40,7 +40,7 @@ LPPTDATA Thread_GetEmptyThread () {
 	
 	do {
 		if (data->pid == 0) { return data; }
-	} while (data->next);
+	} while ((data = data->next) != NULL);
 	
 	return NULL;
 }
@@ -111,7 +111,7 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 		Util_PrintWindowsLastError();
 		return;
 	}
-	
+
 	Thread_OutputFileCreate();
 	
 	check = Thread_CheckPID(pid);
