@@ -30,6 +30,8 @@ process.cpp - p_#Var
 #include <psapi.h>
 #include <commctrl.h>
 #include <TlHelp32.h>
+#include <taskschd.h>
+#include <atlbase.h>
 
 //Include Custom
 #include "main.hpp"

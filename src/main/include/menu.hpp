@@ -1,5 +1,6 @@
 #pragma once
 
+bool Menu_TaskSchedulerInit ();
 void Menu_SetMenuString (WORD, LPWSTR);
 void Menu_SetMenuState (WORD, BOOL);
 void Menu_ExecuteNotifyEvent (WORD);

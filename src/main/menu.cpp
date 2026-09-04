@@ -4,28 +4,82 @@
 
 HMENU me_menu;
 
-MENUITEMINFO me_mi = {sizeof(MENUITEMINFO), 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0, 0};
-NOTIFYICONDATA me_nid = {};
-int me_infoCnt = 0;
-UINT_PTR me_timer = 0;
+MENUITEMINFO 		me_mi = {sizeof(MENUITEMINFO)};
+NOTIFYICONDATA 		me_nid = {};
+int 				me_infoCnt = 0;
+UINT_PTR 			me_timer = 0;
 
 //Internal
 
-void Menu_SetStartup (BOOL add) {
-	HKEY tmpkey;
-	wchar_t path[MAX_PATH];
-	wchar_t regval[MAX_PATH];
-	
+#define CHECK_HR(expr) do {hr = (expr); if (FAILED(hr)) goto Final; } while (0)
+#define CHECK_HR_REMOVE(expr) do {hr = (expr); if (FAILED(hr)) goto Failed; } while (0)
+
+bool Menu_SetStartup (BOOL add) {
+	HRESULT hr;
+	bool	rtn = false;
+	CComPtr<ITaskService> 		tsvc;
+	CComPtr<ITaskFolder> 		tf;
+	CComPtr<ITaskDefinition> 	td;
+	CComPtr<IRegistrationInfo> 	tri;
+	CComPtr<IPrincipal> 		tp;
+	CComPtr<ITaskSettings> 		ts;
+	CComPtr<ITriggerCollection> ttc;
+	CComPtr<ITrigger> 			tt;
+	CComPtr<IActionCollection> 	tac;
+	CComPtr<IAction> 			ta;
+	CComPtr<IExecAction> 		tea;
+	CComPtr<IRegisteredTask> 	tr;
+	wchar_t				path[MAX_PATH] = {};
+
+	CHECK_HR(tsvc.CoCreateInstance(CLSID_TaskScheduler));
+
+	CHECK_HR(tsvc->Connect(_variant_t(), _variant_t(), _variant_t(), _variant_t()));
+
+	CHECK_HR(tsvc->GetFolder(_bstr_t(L"\\"), &tf));
+
+	if (!add) { goto Failed; }
+	CHECK_HR_REMOVE(tsvc->NewTask(0, &td));
+
+	CHECK_HR_REMOVE(td->get_RegistrationInfo(&tri));
+	tri->put_Author(_bstr_t(L"Duality"));
+
+	CHECK_HR_REMOVE(td->get_Principal(&tp));
+	tp->put_RunLevel(TASK_RUNLEVEL_HIGHEST);
+	tp->put_LogonType(TASK_LOGON_INTERACTIVE_TOKEN);
+
+	CHECK_HR_REMOVE(td->get_Settings(&ts));
+	ts->put_StartWhenAvailable(VARIANT_TRUE);
+	ts->put_DisallowStartIfOnBatteries(VARIANT_TRUE);
+	ts->put_StopIfGoingOnBatteries(VARIANT_TRUE);
+
+	CHECK_HR_REMOVE(td->get_Triggers(&ttc));
+	ttc->Create(TASK_TRIGGER_LOGON, &tt);
+
+	CHECK_HR_REMOVE(td->get_Actions(&tac));
+	tac->Create(TASK_ACTION_EXEC, &ta);
+
+	CHECK_HR_REMOVE(ta->QueryInterface(IID_IExecAction, (LPVOID*)&tea));
 	GetModuleFileName(NULL, path, MAX_PATH);
-	swprintf(regval, L"\"%ls\" -hide", path);
-	
-	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
-	if (!add) {
-		RegDeleteValue(tmpkey, L"WindowProperty");
-	} else {
-		RegSetValueEx(tmpkey, L"WindowProperty", 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
-	}
-	RegCloseKey(tmpkey);
+	tea->put_Path(_bstr_t(path));
+	tea->put_Arguments(_bstr_t(L"-hide"));
+
+	CHECK_HR_REMOVE(tf->RegisterTaskDefinition(
+		_bstr_t(L"WindowProperty"),
+		td,
+		TASK_CREATE_OR_UPDATE,
+		_variant_t(),
+		_variant_t(),
+		TASK_LOGON_INTERACTIVE_TOKEN,
+		_variant_t(L""),
+		&tr
+	));
+
+	return true;
+
+	Failed:
+	rtn = SUCCEEDED(tf->DeleteTask(_bstr_t(L"WindowProperty"), 0));
+	Final:
+	return rtn;
 }
 
 void Menu_SetRTContext (BOOL add) {
@@ -64,6 +118,31 @@ void Menu_DeleteNotifyIcon (HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime
 }
 
 //External
+
+bool Menu_TaskSchedulerInit () {
+	HRESULT hr;
+	CComPtr<ITaskService> 		tsvc;
+	CComPtr<ITaskFolder> 		tf;
+	CComPtr<IRegisteredTask> 	tr;
+
+	hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	if (FAILED(hr)) { return false; }
+	
+	CoInitializeSecurity(nullptr, -1 nullptr, nullptr, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, 0, nullptr);
+
+	hr = tsvc.CoCreateInstance(CLSID_TaskScheduler);
+	if (FAILED(hr)) { return false; }
+
+	tsvc->Connect(_variant_t(), _variant_t(), _variant_t(), _variant_t());
+	if (FAILED(hr)) { return false; }
+	
+	tsvc->GetFolder(_bstr_t(L"\\"), &tf);
+
+	tf->GetTask(_bstr_t(L"WindowProperty"), &tr);
+	Menu_SetMenuState(TN_MENU_INIT, SUCCEEDED(hr));
+
+	return true;
+}
 
 void Menu_SetMenuState (WORD message, BOOL on) {
 	me_mi.fMask = MIIM_STATE;
@@ -118,7 +197,8 @@ void Menu_ExecuteNotifyEvent (WORD message) {
 					Hook_ClipHotkeyRegister(changed);
 					break;
 				case TN_MENU_INIT:
-					Menu_SetStartup(changed);
+					me_mi.fState = Menu_SetStartup(changed) ? MFS_CHECKED : MFS_UNCHECKED;
+					SetMenuItemInfo(me_menu, MAKELONG(ID_BUTTON_ICON, message), false &me_mi);
 					break;
 				case TN_MENU_RT:
 					Menu_SetRTContext(changed);

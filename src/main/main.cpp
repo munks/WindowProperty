@@ -19,6 +19,7 @@ void Main_Close () {
 	RegCloseKey(m_regset);
 	RegCloseKey(m_regrec);
 	Menu_RemoveNotifyIcon();
+	CoUninitialize();
 	Thread_Close();
 	FreeLibrary(c_comctlModule);
 	PostQuitMessage(0);
@@ -37,6 +38,13 @@ void Main_DeleteRegistryVer0() {
 		RegDeleteKey(m_regset, key);
 	}
 }
+void Main_DeleteRegistryVer1() {
+	HKEY tmpkey;
+
+	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
+	RegDeleteValue(tmpkey, L"WindowProperty");
+	RegCloseKey(tmpkey);
+}
 
 void Main_VersionCheck (DWORD ver) {
 	DWORD reg, size;
@@ -45,7 +53,7 @@ void Main_VersionCheck (DWORD ver) {
 	
 	switch (reg) {
 		case 0: Main_DeleteRegistryVer0();
-		case 1:
+		case 1:	Main_DeleteRegistryVer1();
 		case 2:
 		case 3: break;
 	}
@@ -237,7 +245,6 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 		//Not Used
 		WindowEvent(WM_DESTROY) {
-			Menu_RemoveNotifyIcon();
 			PostQuitMessage(0);
 			return 0;
 		}
@@ -315,7 +322,7 @@ int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLi
 	RegCreateKeyEx(m_regkey, L"Settings", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regset, NULL);
 	RegCreateKeyEx(m_regkey, L"Records", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regrec, NULL);
 	
-	Main_VersionCheck(1);
+	Main_VersionCheck(2);
 	
 	//Set Global Variables
 	m_hInstance = hInstance;
@@ -429,13 +436,15 @@ int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLi
 	Hook_ClipHotkeyRegister(regval);
 	
 	//Get Registry (INIT)
-	Menu_SetMenuState(TN_MENU_INIT, !RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", L"WindowProperty", RRF_RT_REG_SZ, NULL, NULL, NULL));
 	result = RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, KEY_ALL_ACCESS, &hkey);
 	Menu_SetMenuState(TN_MENU_RT, result == ERROR_SUCCESS);
 	if (result == ERROR_SUCCESS) {
 		RegCloseKey(hkey);
 	}
 	
+	//Init Task Scheduler COM And Get Task State
+	if (!Menu_TaskSchedulerInit()) { return 1; }
+
 	//Show Window (Main)
 	UpdateWindow(m_main);
 	if (!wndHide) {

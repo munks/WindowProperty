@@ -4,6 +4,8 @@
 
 #define PROP_WIDTH 100
 
+ID_MANIFEST RT_MANIFEST "app.manifest"
+
 ID_ICON ICON "noname.ico"
 
 ID_DLG_PROP DIALOG 0, 0, 450, 230

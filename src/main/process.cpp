@@ -255,6 +255,7 @@ HINSTANCE ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pi
 	wchar_t mainpath[MAX_PATH];
 	wchar_t exepath[MAX_PATH];
 	wchar_t params[MAX_PATH];
+	SHELLEXECUTEINFO sei = {};
 	
 	GetModuleFileName(NULL, mainpath, MAX_PATH);
 	*(wcsrchr(mainpath, L'\\') + 1) = L'\0';
@@ -262,11 +263,17 @@ HINSTANCE ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pi
 	swprintf(exepath, L"%ls%ls", mainpath, exe);
 	swprintf(params, L"%d \"%ls%ls\"", pid, mainpath, dll);
 	
+	sei.cbSize = sizeof(SHELLEXECUTEINFO);
+	sei.lpVerb = L"runas";
+	sei.lpFile = exepath;
+	sei.lpParameters = params;
+	sei.hwnd = main;
+
 	#ifdef _DEBUG
 	wprintf(L"ShellExecute: %ls %ls\n", exepath, params);
 	#endif
 	
-	return ShellExecute(main, L"open", exepath, params, NULL, 0);
+	return ShellExecuteEx(&sei);
 }
 
 #define IntToStr(s, i) case i: wcscpy(s, L"##i##"); break;
