@@ -32,6 +32,11 @@ process.cpp - p_#Var
 #include <TlHelp32.h>
 #include <taskschd.h>
 #include <atlbase.h>
+#include <comutil.h>
+
+//Include Library
+#pragma comment(lib, "comsuppw.lib")
+#pragma comment(lib, "taskschd.lib")
 
 //Include Custom
 #include "main.hpp"

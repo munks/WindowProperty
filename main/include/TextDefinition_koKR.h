@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 //Window Main
 #define WINDOW_MAIN_NAME			L"DualityFrame_Property"

@@ -6,11 +6,11 @@ LONG_PTR u_filter[2][2] = {{WS_VISIBLE, 0}, {0, WS_EX_TOOLWINDOW | WS_EX_NOREDIR
 
 //Internal
 
-bool CheckErrorFunc (void* checkVar, LPCSTR file, int line, LPCSTR targetValName) {
+bool CheckErrorFunc (void* checkVar, LPCWSTR file, int line, LPCSTR targetValName) {
 	char errmsg[150];
 	
 	if (checkVar == NULL) {
-		sprintf(errmsg, "Window Processing Error\nOn File - %s, In Line - %d\nVariable Name - %s, Error Code - %d", file, line, targetValName, GetLastError());
+		sprintf_s(errmsg, ARRAYSIZE(errmsg), "Window Processing Error\nOn File - %ls, In Line - %d\nVariable Name - %s, Error Code - %d", file, line, targetValName, GetLastError());
 		MessageBoxA(NULL, errmsg, "Error", MB_OK | MB_ICONERROR);
 		Main_Close();
 	}
@@ -18,15 +18,15 @@ bool CheckErrorFunc (void* checkVar, LPCSTR file, int line, LPCSTR targetValName
 	return true;
 }
 
-wchar_t* Util_GetHotkeyRegkey (DWORD hotkey) {
-	static wchar_t str[20];
+static wchar_t* Util_GetHotkeyRegkey (DWORD hotkey) {
+	static wchar_t str[20] = {0};
 	
 	switch (hotkey) {
 		case HOTKEY_MOVE:
-			wcscpy(str, L"MoveActiveKey");
+			wcscpy_s(str, ARRAYSIZE(str), L"MoveActiveKey");
 			break;
 		case HOTKEY_CURSOR:
-			wcscpy(str, L"CursorActiveKey");
+			wcscpy_s(str, ARRAYSIZE(str), L"CursorActiveKey");
 			break;
 		default:
 			return NULL;
@@ -100,7 +100,7 @@ bool Util_WindowFilter (HWND hwnd) {
 }
 
 DWORD Util_GetHotkey (DWORD hotkey, int type) {
-	DWORD tmp, rtn;
+	DWORD tmp = 0, rtn = 0;
 	DWORD size;
 	LSTATUS result;
 	WORD data;
@@ -133,9 +133,9 @@ DWORD Util_GetHotkey (DWORD hotkey, int type) {
 }
 
 LPWSTR Util_GetHotkeyString (DWORD hotkey) {
-	static wchar_t out[30];
-	DWORD tmp;
-	DWORD size;
+	static wchar_t out[30] = {0};
+	DWORD tmp = 0;
+	DWORD size = 0;
 	LSTATUS result;
 	WORD data;
 	BYTE vk, ak;
@@ -143,7 +143,7 @@ LPWSTR Util_GetHotkeyString (DWORD hotkey) {
 	result = RegGetValue(m_regkey, NULL, Util_GetHotkeyRegkey(hotkey), RRF_RT_DWORD, NULL, &tmp, &(size = 4));
 	
 	if (result) {
-		wcscpy(out, VK_NONE);
+		wcscpy_s(out, ARRAYSIZE(out), VK_NONE);
 		return out;
 	}
 	
@@ -152,11 +152,11 @@ LPWSTR Util_GetHotkeyString (DWORD hotkey) {
 	ak = HIBYTE(data);
 	
 	out[0] = L'\0';
-	if (ak & HOTKEYF_CONTROL) { wcscat(out, L"C"); }
-	if (ak & HOTKEYF_SHIFT) { wcscat(out, L"S"); }
-	if (ak & HOTKEYF_ALT) { wcscat(out, L"A"); }
-	if (ak) { wcscat(out, L" + "); }
-	wcscat(out, VirtualKeyCodeText(vk));
+	if (ak & HOTKEYF_CONTROL) { wcscat_s(out, ARRAYSIZE(out), L"C"); }
+	if (ak & HOTKEYF_SHIFT) { wcscat_s(out, ARRAYSIZE(out), L"S"); }
+	if (ak & HOTKEYF_ALT) { wcscat_s(out, ARRAYSIZE(out), L"A"); }
+	if (ak) { wcscat_s(out, ARRAYSIZE(out), L" + "); }
+	wcscat_s(out, ARRAYSIZE(out), VirtualKeyCodeText(vk));
 	
 	return out;
 }
@@ -171,16 +171,16 @@ LSTATUS Util_SetHotkey (DWORD hotkey, DWORD vk) {
 	return RegSetValueEx(m_regkey, keystr, 0, REG_DWORD, (BYTE*)&vk, sizeof(DWORD));
 }
 
-void Util_PrintWindowsLastErrorInternal (LPCSTR file, LPCSTR func, int line) {
+void Util_PrintWindowsLastErrorInternal (LPCWSTR file, LPCWSTR func, int line) {
 	wchar_t txt[260];
-	LPWSTR msg;
+	LPWSTR msg = NULL;
 	
 	FormatMessage(	FORMAT_MESSAGE_ALLOCATE_BUFFER |
 					FORMAT_MESSAGE_FROM_SYSTEM | 
 					FORMAT_MESSAGE_IGNORE_INSERTS,
 					NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 					(LPWSTR)&msg, 0, NULL);
-	swprintf(txt, L"In File: %s\nIn Function: %s\nIn Line: %d\nError Code: %d\n%ls", file, func, line, GetLastError(), msg);
+	swprintf_s(txt, ARRAYSIZE(txt), L"In File: %s\nIn Function: %s\nIn Line: %d\nError Code: %d\n%ls", file, func, line, GetLastError(), msg);
 	MessageBox(NULL, txt, L"GetLastError", MB_OK);
 	
 	LocalFree(msg);
@@ -189,7 +189,7 @@ void Util_PrintWindowsLastErrorInternal (LPCSTR file, LPCSTR func, int line) {
 void Util_PrintInt (int i) {
 	char txt[260];
 	
-	sprintf(txt, "%d", i);
+	sprintf_s(txt, ARRAYSIZE(txt), "%d", i);
 	MessageBoxA(NULL, txt, "Num.", MB_OK);
 }
 
@@ -206,7 +206,7 @@ DWORD Util_GetWDAState (HWND hwnd) {
 }
 
 void Util_DateOperate (FILETIME* src, FILETIME* target) {
-	ULARGE_INTEGER tmp[2];
+	ULARGE_INTEGER tmp[2] = {0};
 	
 	tmp[0].LowPart = src->dwLowDateTime;
 	tmp[0].HighPart = src->dwHighDateTime;

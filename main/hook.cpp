@@ -87,9 +87,9 @@ void Hook_MoveHotkeyRegister (BOOL reg) {
 	//Button/Menu Icon/Registry set
 	Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_MOVE), reg);
 	if (reg) {
-		swprintf(txt, MENU_MOVE_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_MOVE));
+		swprintf_s(txt, 30, MENU_MOVE_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_MOVE));
 	} else {
-		wcscpy(txt, MENU_MOVE_TEXT);
+		wcscpy_s(txt, 30, MENU_MOVE_TEXT);
 	}
 	Menu_SetMenuString(TN_MENU_MOVE, txt);
 	Menu_SetMenuState(TN_MENU_MOVE, reg);
@@ -129,9 +129,9 @@ void Hook_ClipHotkeyRegister (BOOL reg) {
 	//Button/Menu Icon/Registry set
 	Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_CLIP), reg);
 	if (reg) {
-		swprintf(txt, MENU_CLIP_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_CURSOR));
+		swprintf_s(txt, 30, MENU_CLIP_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_CURSOR));
 	} else {
-		wcscpy(txt, MENU_CLIP_TEXT);
+		wcscpy_s(txt, 30, MENU_CLIP_TEXT);
 	}
 	Menu_SetMenuString(TN_MENU_CLIP, txt);
 	Menu_SetMenuState(TN_MENU_CLIP, reg);

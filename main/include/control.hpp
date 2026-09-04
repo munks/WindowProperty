@@ -15,10 +15,10 @@ typedef struct LVINFO {
 
 void Control_InitDLL ();
 
-HWND Control_CreateButton (HWND, LPCWSTR, LPCWSTR, bool, int, int, int, int, int);
-HWND Control_CreateEdit (HWND, LPCWSTR, int, int, int, int, int, LPCWSTR);
-HWND Control_CreateStatic (HWND, int, int, int, int, int, LPCWSTR);
-void Control_CreateListView (HWND, LPCWSTR, int, int, int, int, int);
+HWND Control_CreateButton (HWND, LPCWSTR, LPCWSTR, bool, int, int, int, int, INT_PTR);
+HWND Control_CreateEdit (HWND, LPCWSTR, int, int, int, int, INT_PTR, LPCWSTR);
+HWND Control_CreateStatic (HWND, int, int, int, int, INT_PTR, LPCWSTR);
+void Control_CreateListView (HWND, LPCWSTR, int, int, int, int, INT_PTR);
 void Control_RefreshListView ();
 
 extern HMODULE c_comctlModule;

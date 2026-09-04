@@ -29,14 +29,19 @@ LRESULT CALLBACK LogProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 //External
 
-void Log_Message (LPCWSTR format, LPCWSTR msg1, LPCWSTR msg2, LPCWSTR msg3) {
+void Log_Message (LPCWSTR format, ...) {
 	wchar_t output[100];
 	time_t t;
+	struct tm lt;
 	wchar_t timeText[15];
+	va_list args;
 	
 	time(&t);
-	wcsftime(timeText, 15, L"%H:%M:%S - ", localtime(&t));
-	swprintf(output, format, msg1, msg2, msg3);
+	localtime_s(&lt, &t);
+	wcsftime(timeText, ARRAYSIZE(timeText), L"%H:%M:%S - ", &lt);
+	va_start(args, format);
+	vswprintf_s(output, ARRAYSIZE(output), format, args);
+	va_end(args);
 	
 	AddTextToLogEdit(timeText);
 	AddTextToLogEdit(output);
@@ -54,7 +59,7 @@ void Log_CreateWindow (HWND main) {
 	wc.hbrBackground = m_hbrush;
 	wc.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 
-	Util_CheckError((void*)MAKELONG(RegisterClassEx(&wc), 0));
+	Util_CheckError((void*)(INT_PTR)RegisterClassEx(&wc));
 	
 	//Create Log Window
 	l_window = CreateWindowEx(WS_EX_TOPMOST, WINDOW_LOG_NAME, WINDOW_LOG_CAPTION,

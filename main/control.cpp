@@ -21,7 +21,7 @@ LVINFO c_listViewInfo[LV_MAX_COL] = {
 
 //Internal
 
-void Control_CreateTooltip (HWND hwnd, HWND hitem, LPCWSTR tooltip) {
+static void Control_CreateTooltip (HWND hwnd, HWND hitem, LPCWSTR tooltip) {
 	HWND tmphwnd;
 	wchar_t txt[MAX_PATH];
 	TOOLINFO ti = { 0 };
@@ -34,7 +34,7 @@ void Control_CreateTooltip (HWND hwnd, HWND hitem, LPCWSTR tooltip) {
 							m_hInstance, NULL);
 	Util_CheckError(tmphwnd);
 	
-	wcscpy(txt, tooltip);
+	wcsncpy_s(txt, MAX_PATH, tooltip, _TRUNCATE);
 	
 	ti.cbSize = sizeof(ti) - sizeof(void*);
 	ti.hwnd = hwnd;
@@ -48,14 +48,18 @@ void Control_CreateTooltip (HWND hwnd, HWND hitem, LPCWSTR tooltip) {
 //External
 
 void Control_InitDLL () {
-	c_comctlModule = LoadLibraryA("comctl32.dll");
+	c_comctlModule = LoadLibrary(L"comctl32.dll");
 	
+	if (!c_comctlModule) {
+		Util_PrintWindowsLastError();
+		return;
+	}
 	IL_Destroy = (ILD)GetProcAddress(c_comctlModule, "ImageList_Destroy");
 	IL_Create = (ILC)GetProcAddress(c_comctlModule, "ImageList_Create");
 	IL_ReplaceIcon = (ILRI)GetProcAddress(c_comctlModule, "ImageList_ReplaceIcon");
 }
 
-HWND Control_CreateButton (HWND hwnd, LPCWSTR caption, LPCWSTR tooltip, bool checkbox, int x, int y, int w, int h, int idtf) {
+HWND Control_CreateButton (HWND hwnd, LPCWSTR caption, LPCWSTR tooltip, bool checkbox, int x, int y, int w, int h, INT_PTR idtf) {
 	HWND tmphwnd;
 	
 	tmphwnd = CreateWindow(L"BUTTON", caption,
@@ -78,7 +82,7 @@ HWND Control_CreateButton (HWND hwnd, LPCWSTR caption, LPCWSTR tooltip, bool che
 	return tmphwnd;
 }
 
-HWND Control_CreateEdit (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h, int idtf, LPCWSTR txt) {
+HWND Control_CreateEdit (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h, INT_PTR idtf, LPCWSTR txt) {
 	HWND tmphwnd;
 	
 	tmphwnd = CreateWindow(L"EDIT", NULL,
@@ -101,7 +105,7 @@ HWND Control_CreateEdit (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h,
 	return tmphwnd;
 }
 
-HWND Control_CreateStatic (HWND hwnd, int x, int y, int w, int h, int idtf, LPCWSTR txt) {
+HWND Control_CreateStatic (HWND hwnd, int x, int y, int w, int h, INT_PTR idtf, LPCWSTR txt) {
 	HWND tmphwnd;
 	
 	tmphwnd = CreateWindow(L"STATIC", NULL,
@@ -120,7 +124,7 @@ HWND Control_CreateStatic (HWND hwnd, int x, int y, int w, int h, int idtf, LPCW
 	return tmphwnd;
 }
 
-void Control_CreateListView (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h, int idtf) {
+void Control_CreateListView (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h, INT_PTR idtf) {
 	LVCOLUMNW col = {0, };
 	
 	//Make Control
@@ -147,14 +151,14 @@ void Control_CreateListView (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, in
 	col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 	
 	_repeat (i, LV_MAX_COL) {
-		col.cx = c_listViewInfo[i].ratio * w;
+		col.cx = (int)(c_listViewInfo[i].ratio * w);
 		col.pszText = c_listViewInfo[i].text;
 		ListView_InsertColumn(c_listView, i, &col);
 	}
 }
 
 void Control_RefreshListView () {
-	wchar_t outputText[MAX_PATH];
+	wchar_t outputText[MAX_PATH] = {0};
 	LVITEM item;
 	HICON icon;
 	int idx;
@@ -181,21 +185,21 @@ void Control_RefreshListView () {
 					switch (i) {
 						case 0: { //Item 0(Process Name)
 							if ((GetWindowLong(WindowLoopHandle(), GWL_EXSTYLE) & WS_EX_TOPMOST) != 0) {
-								wcscat(outputText, L"*"); //Add Asterisk If HWND is TOPMOST
+								wcscat_s(outputText, ARRAYSIZE(outputText), L"*"); //Add Asterisk If HWND is TOPMOST
 							}
-							wcscat(outputText, ProcessLoopName());
+							wcscat_s(outputText, ARRAYSIZE(outputText), ProcessLoopName());
 							break;
 						}
 						case 1: { //Item 1(Process Title)
-							GetWindowText(WindowLoopHandle(), outputText, MAX_PATH);
+							GetWindowText(WindowLoopHandle(), outputText, ARRAYSIZE(outputText));
 							break;
 						}
 						case 2: { //Item 2(Process Id)
-							swprintf(outputText, L"%d", ProcessLoopID());
+							swprintf_s(outputText, ARRAYSIZE(outputText), L"%d", ProcessLoopID());
 							break;
 						}
 						case 3: { //Item 3(Window Handle)
-							swprintf(outputText, L"%d", WindowLoopHandle());
+							swprintf_s(outputText, ARRAYSIZE(outputText), L"%d", (int)(INT_PTR)WindowLoopHandle());
 							break;
 						}
 					}

@@ -4,13 +4,12 @@
 	#include "TextDefinition.h"
 #endif
 
-#define ID_MANIFEST				1
-#define ID_MAIN					2
-#define ID_ICON					3	//Icon
-#define ID_LIST					4
-#define ID_DLG_NAME				5	//Change Name
-#define ID_DLG_PROP				6 	//Prop Change
-#define ID_DLG_HOTKEY			7 	//Change Hotkey
+#define ID_MAIN					1
+#define ID_ICON					2	//Icon
+#define ID_LIST					3
+#define ID_DLG_NAME				4	//Change Name
+#define ID_DLG_PROP				5 	//Prop Change
+#define ID_DLG_HOTKEY			6 	//Change Hotkey
 
 #define ID_BUTTON_PROP			100
 #define ID_BUTTON_NAME			101

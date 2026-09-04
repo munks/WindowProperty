@@ -4,9 +4,8 @@
 
 void AttachDLL (HANDLE process, const wchar_t* dll) {
 	LPVOID alloc;
-	HMODULE gmh;
 	HANDLE thread;
-	int len;
+	size_t len;
 	
 	len = wcslen(dll) + 1;
 	
@@ -46,8 +45,7 @@ void ProcessCommandLine (ULONG pid, const wchar_t* dll) {
 	}
 	
 	//DLL Check
-	file = _wfopen(dll, L"r");
-	if (!file) {
+	if (_wfopen_s(&file, dll, L"r") != 0) {
 		goto FREEPROC;
 	}
 	fclose(file);
@@ -59,9 +57,25 @@ void ProcessCommandLine (ULONG pid, const wchar_t* dll) {
 	CloseHandle(process);
 }
 
+void SetTokenPrivileges() {
+	HANDLE token;
+	TOKEN_PRIVILEGES tp;
+	LUID luid;
+
+	OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token);
+	LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid);
+	tp.PrivilegeCount = 1;
+	tp.Privileges[0].Luid = luid;
+	tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+	AdjustTokenPrivileges(token, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL);
+	CloseHandle(token);
+}
+
 int wmain (int argc, wchar_t* argv[]) {
 	if (argc != 3) { return 0; }
 	
+	SetTokenPrivileges();
+
 	ProcessCommandLine(_wtoi(argv[1]), argv[2]);
 	return 0;
 }

@@ -28,7 +28,7 @@ void Main_Close () {
 //Internal
 #define CreateButtonMacro(h, id, cb, x, y, cx, cy) Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, cb, x, y, cx, cy, ID_BUTTON_##id)
 
-void Main_DeleteRegistryVer0() {
+static void Main_DeleteRegistryVer0() {
 	int idx = 0;
 	DWORD len;
 	wchar_t key[256];
@@ -38,7 +38,7 @@ void Main_DeleteRegistryVer0() {
 		RegDeleteKey(m_regset, key);
 	}
 }
-void Main_DeleteRegistryVer1() {
+static void Main_DeleteRegistryVer1() {
 	HKEY tmpkey;
 
 	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
@@ -46,32 +46,37 @@ void Main_DeleteRegistryVer1() {
 	RegCloseKey(tmpkey);
 }
 
-void Main_VersionCheck (DWORD ver) {
+static void Main_VersionCheck (DWORD ver) {
 	DWORD reg, size;
 	
 	RegGetValue(m_regkey, NULL, L"Version", RRF_RT_REG_DWORD, NULL, &(reg = 0), &(size = sizeof(DWORD)));
-	
+
 	switch (reg) {
-		case 0: Main_DeleteRegistryVer0();
-		case 1:	Main_DeleteRegistryVer1();
+		case 0:
+			Main_DeleteRegistryVer0();
+			[[fallthrough]];
+		case 1:
+			Main_DeleteRegistryVer1();
+			[[fallthrough]];
 		case 2:
-		case 3: break;
+			break;
+		case 3:
+			break;
 	}
-	
+
 	RegSetValueEx(m_regkey, L"Version", 0, REG_DWORD, (BYTE*)&ver, sizeof(DWORD));
 }
 
-LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
-	wchar_t pidhwnd[10];
-	wchar_t text[4];
-	wchar_t name[30];
-	wchar_t path[MAX_PATH];
+	wchar_t pidhwnd[10]		= {0};
+	wchar_t text[4]			= {0};
+	wchar_t name[30]		= {0};
+	wchar_t path[MAX_PATH]	= {0};
 	BYTE alpha;
 	int value;
 	BOOL changed;
 	POINT cursor;
-	RECT rect;
 	
 	#ifdef _DEBUG
 	Debug_ConvertWindowMessage(uMsg);
@@ -89,13 +94,14 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 					//Set Selected Specific Value
 					c_listViewIndex = ListView_GetNextItem(ListViewDialog(), -1, LVNI_FOCUSED | LVNI_SELECTED);
 					ListView_GetItemText(ListViewDialog(), c_listViewIndex, 3, pidhwnd, 10);
-					
-					tmphwnd = (HWND)_wtoi(pidhwnd);
+					pidhwnd[9] = L'\0';
+
+					tmphwnd = (HWND)(UINT_PTR)_wtoi(pidhwnd);
 					changed = GetLayeredWindowAttributes(tmphwnd, NULL, &alpha, NULL);
 					
 					Button_SetText(GetDlgItem(hwnd, ID_BUTTON_CAPTURE),
 								Util_GetWDAState(tmphwnd) ? BUTTON_CAPTURE_CAPTION : BUTTON_CAPTURE_CAPTION_2);
-					swprintf(text, L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
+					swprintf_s(text, 4, L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
 					SetDlgItemText(hwnd, ID_EDIT_ALPHA, text);
 					break;
 				}
@@ -104,7 +110,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		}
 		WindowEvent(WM_COPYDATA) {
 			if (((COPYDATASTRUCT*)lParam)->dwData == 1) {
-				wcscpy(path, (LPWSTR)((COPYDATASTRUCT*)lParam)->lpData);
+				wcscpy_s(path, MAX_PATH, (LPWSTR)((COPYDATASTRUCT*)lParam)->lpData);
 				Thread_CreateThreadProcess(path);
 			}
 			break;
@@ -114,7 +120,8 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 				break;
 			}
 		}
-		WindowEvent(WM_SHOWWINDOW)
+		WindowEvent(WM_SHOWWINDOW) [[fallthrough]];
+		WindowEvent(WM_TIMER) [[fallthrough]];
 		WindowEvent(WM_SETFOCUS) {
 			Control_RefreshListView();
 			break;
@@ -167,12 +174,14 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 							
 							if (executionFunc == NULL) { break; }
 							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 0, name, 30);
-							if (name[0] == L'*') { wcscpy(name, name + 1); }
+							if (name[0] == L'*') { wcscpy_s(name, 30, name + 1); }
 							
 							//Selected Process Execution
 							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
-							if (IsWindow((HWND)_wtoi(pidhwnd)) && !IsHungAppWindow((HWND)_wtoi(pidhwnd))) {
-								executionFunc((HWND)_wtoi(pidhwnd), (HWND)lParam, name);
+							pidhwnd[9] = L'\0';
+
+							if (IsWindow((HWND)(UINT_PTR)_wtoi(pidhwnd)) && !IsHungAppWindow((HWND)(UINT_PTR)_wtoi(pidhwnd))) {
+								executionFunc((HWND)(UINT_PTR)_wtoi(pidhwnd), (HWND)lParam, name);
 							} else {
 								Menu_InfoNotifyIcon(name, LOG_NO_OR_NR_WINDOW, 3000);
 							}
@@ -207,7 +216,7 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 							if (value == GetDlgItemInt(hwnd, ID_EDIT_ALPHA, NULL, false)) { break; }
 						}
 						
-						swprintf(text, L"%d", value);
+						swprintf_s(text, 4, L"%d", value);
 						Edit_SetText(tmphwnd, text);
 						Edit_SetSel(tmphwnd, 3, 3);
 					}
@@ -272,10 +281,10 @@ LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow) {
+int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR pCmdLine, _In_ int nCmdShow) {
 	bool wndHide = false;
-	BYTE regval;
-	DWORD size;
+	BYTE regval	= 0;
+	DWORD size	= 0;
 	WNDCLASSEX wc = {};
 	HWND hwndFind;
 	LPWSTR* cmdArgs;
@@ -295,8 +304,8 @@ int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLi
 				if (i < cmdArgc) {
 					wprintf(L"Command Line: %ls\n", cmdArgs[i]);
 					cds.dwData = 1;
-					cds.cbData = wcslen(cmdArgs[i]) * sizeof(wchar_t);
-					cds.lpData = cmdArgs[i];
+					cds.cbData = (DWORD)(wcslen(cmdArgs[i]) * sizeof(wchar_t));
+					cds.lpData = (LPVOID)cmdArgs[i];
 				}
 			}
 		}
@@ -353,12 +362,12 @@ int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLi
 	wc.hbrBackground = m_hbrush;
 	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ID_ICON));
 	
-	Util_CheckError((void*)(MAKELONG(RegisterClassEx(&wc), 0)));
+	Util_CheckError((void*)(UINT_PTR)RegisterClassEx(&wc));
 	
 	//Create Main Window
 	m_main = CreateWindowEx(WS_EX_TOPMOST, WINDOW_MAIN_NAME, WINDOW_MAIN_CAPTION,
 							WS_OVERLAPPED | WS_CAPTION | WS_POPUPWINDOW,
-							CW_USEDEFAULT, CW_USEDEFAULT, 600, 580,
+							CW_USEDEFAULT, CW_USEDEFAULT, 600, 600,
 							NULL, NULL, hInstance, NULL);
 	Util_CheckError(m_main);
 	
@@ -444,6 +453,10 @@ int WINAPI wWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLi
 	
 	//Init Task Scheduler COM And Get Task State
 	if (!Menu_TaskSchedulerInit()) { return 1; }
+
+
+	//SetTimer (Refresh List-View)
+	SetTimer(m_main, 1, 200, nullptr);
 
 	//Show Window (Main)
 	UpdateWindow(m_main);

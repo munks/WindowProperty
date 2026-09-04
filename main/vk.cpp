@@ -1,6 +1,6 @@
 #include "global.hpp"
 
-#define SetStr(k, t) case k: { wcscpy(keystr, t); break; }
+#define SetStr(k, t) case k: { wcscpy_s(keystr, ARRAYSIZE(keystr), t); break; }
 
 LPWSTR VirtualKeyCodeText (DWORD code) {
 	static wchar_t keystr[20];
@@ -178,7 +178,7 @@ LPWSTR VirtualKeyCodeText (DWORD code) {
 		SetStr(VK_NONAME, L"NONAME");
 		SetStr(VK_PA1, L"PA1");
 		SetStr(VK_OEM_CLEAR, L"Clear");
-		default: wcscpy(keystr, L"?");
+		default: wcscpy_s(keystr, ARRAYSIZE(keystr), L"?");
 	}
 	
 	return keystr;

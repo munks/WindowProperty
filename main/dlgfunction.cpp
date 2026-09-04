@@ -63,12 +63,12 @@ void DlgFunction_SetProperties (HWND hwnd, PLONG_PTR style, PLONG_PTR exstyle) {
 	for (int i = 0; i < 32; i++) {
 		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
 			if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
-				prop[0] |= 1 << i;
+				prop[0] |= 1ULL << i;
 			}
 		}
 		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
 			if (Button_GetCheck(tmphwnd) == BST_CHECKED) {
-				prop[1] |= 1 << i;
+				prop[1] |= 1ULL << i;
 			}
 		}
 	}
@@ -88,14 +88,14 @@ void DlgFunction_SetFilter (HWND hwnd) {
 	for (int i = 0; i < 32; i++) {
 		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
 			switch (Button_GetCheck(tmphwnd)) {
-				case BST_CHECKED: u_filter[0][0] |= 1 << i; break;
-				case BST_INDETERMINATE: u_filter[0][1] |= 1 << i; break;
+				case BST_CHECKED: u_filter[0][0] |= 1ULL << i; break;
+				case BST_INDETERMINATE: u_filter[0][1] |= 1ULL << i; break;
 			}
 		}
 		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
 			switch (Button_GetCheck(tmphwnd)) {
-				case BST_CHECKED: u_filter[1][0] |= 1 << i; break;
-				case BST_INDETERMINATE: u_filter[1][1] |= 1 << i; break;
+				case BST_CHECKED: u_filter[1][0] |= 1ULL << i; break;
+				case BST_INDETERMINATE: u_filter[1][1] |= 1ULL << i; break;
 			}
 		}
 	}
@@ -122,18 +122,18 @@ void DlgFunction_PropInit (HWND hwnd, LONG_PTR style[], LONG_PTR exstyle[], bool
 	
 	for (int i = 0; i < 32; i++) {
 		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON + i)) != NULL) {
-			prop = (style[0] & (1 << i)) ? BST_CHECKED : BST_UNCHECKED;
+			prop = (style[0] & (1ULL << i)) ? BST_CHECKED : BST_UNCHECKED;
 			if (exclude) {
 				DlgFunction_ButtonSetType(tmphwnd, BS_AUTO3STATE);
-				prop = (style[1] & (1 << i)) ? BST_INDETERMINATE : prop;
+				prop = (style[1] & (1ULL << i)) ? BST_INDETERMINATE : prop;
 			}
 			Button_SetCheck(tmphwnd, prop);
 		}
 		if ((tmphwnd = GetDlgItem(hwnd, PROP_BUTTON_EX + i)) != NULL) {
-			prop = (exstyle[0] & (1 << i)) ? BST_CHECKED : BST_UNCHECKED;
+			prop = (exstyle[0] & (1ULL << i)) ? BST_CHECKED : BST_UNCHECKED;
 			if (exclude) {
 				DlgFunction_ButtonSetType(tmphwnd, BS_AUTO3STATE);
-				prop = (exstyle[1] & (1 << i)) ? BST_INDETERMINATE : prop;
+				prop = (exstyle[1] & (1ULL << i)) ? BST_INDETERMINATE : prop;
 			}
 			Button_SetCheck(tmphwnd, prop);
 		}
@@ -212,7 +212,7 @@ DWORD WINAPI DlgFunction_SystemTimeLoop (LPVOID param) {
 		GetSystemTimeAsFileTime(&ftCurrent);
 		Util_DateOperate(&ftCurrent, &ftOrigin);
 		Util_FileTimeToTime(&ftCurrent, &calctime);
-		swprintf(timetext, DLG_PROP_TIME, calctime.wHour, calctime.wMinute, calctime.wSecond, calctime.wMilliseconds);
+		swprintf_s(timetext, 260, DLG_PROP_TIME, calctime.wHour, calctime.wMinute, calctime.wSecond, calctime.wMilliseconds);
 		SetWindowText(display, timetext);
 		Sleep(125);
 	}

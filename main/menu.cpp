@@ -14,7 +14,7 @@ UINT_PTR 			me_timer = 0;
 #define CHECK_HR(expr) do {hr = (expr); if (FAILED(hr)) goto Final; } while (0)
 #define CHECK_HR_REMOVE(expr) do {hr = (expr); if (FAILED(hr)) goto Failed; } while (0)
 
-bool Menu_SetStartup (BOOL add) {
+static bool Menu_SetStartup (BOOL add) {
 	HRESULT hr;
 	bool	rtn = false;
 	CComPtr<ITaskService> 		tsvc;
@@ -37,7 +37,11 @@ bool Menu_SetStartup (BOOL add) {
 
 	CHECK_HR(tsvc->GetFolder(_bstr_t(L"\\"), &tf));
 
-	if (!add) { goto Failed; }
+	if (!add) {
+		rtn = FAILED(tf->DeleteTask(_bstr_t(L"WindowProperty"), 0));
+		goto Final;
+	}
+
 	CHECK_HR_REMOVE(tsvc->NewTask(0, &td));
 
 	CHECK_HR_REMOVE(td->get_RegistrationInfo(&tri));
@@ -82,7 +86,7 @@ bool Menu_SetStartup (BOOL add) {
 	return rtn;
 }
 
-void Menu_SetRTContext (BOOL add) {
+static void Menu_SetRTContext (BOOL add) {
 	HKEY tmpkey;
 	HKEY tmpkey2;
 	wchar_t path[MAX_PATH];
@@ -96,19 +100,19 @@ void Menu_SetRTContext (BOOL add) {
 		RegCloseKey(tmpkey);
 		RegDeleteKey(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker");
 	} else {
-		wcscpy(regval, BUTTON_RUNTIME_CAPTION);
-		RegSetValueEx(tmpkey, NULL, 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
-		swprintf(regval, L"\"%ls\",0", path);
-		RegSetValueEx(tmpkey, L"Icon", 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
+		wcscpy_s(regval, MAX_PATH, BUTTON_RUNTIME_CAPTION);
+		RegSetValueEx(tmpkey, NULL, 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
+		swprintf_s(regval, MAX_PATH, L"\"%ls\",0", path);
+		RegSetValueEx(tmpkey, L"Icon", 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
 		RegCreateKeyEx(tmpkey, L"command", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey2, NULL);
-		swprintf(regval, L"\"%ls\" -rtcheck \"%%1\"", path);
-		RegSetValueEx(tmpkey2, NULL, 0, REG_SZ, (BYTE*)regval, (wcslen(regval) + 1) * 2);
+		swprintf_s(regval, MAX_PATH, L"\"%ls\" -rtcheck \"%%1\"", path);
+		RegSetValueEx(tmpkey2, NULL, 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
 		RegCloseKey(tmpkey);
 		RegCloseKey(tmpkey2);
 	}
 }
 
-void Menu_DeleteNotifyIcon (HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
+static void Menu_DeleteNotifyIcon (HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
 	//Remove Info
 	ZeroMemory(me_nid.szInfo, sizeof(me_nid.szInfo));
 	Shell_NotifyIcon(NIM_MODIFY, &me_nid);
@@ -128,7 +132,7 @@ bool Menu_TaskSchedulerInit () {
 	hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(hr)) { return false; }
 	
-	CoInitializeSecurity(nullptr, -1 nullptr, nullptr, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, 0, nullptr);
+	(void)CoInitializeSecurity(nullptr, -1, nullptr, nullptr, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, 0, nullptr);
 
 	hr = tsvc.CoCreateInstance(CLSID_TaskScheduler);
 	if (FAILED(hr)) { return false; }
@@ -198,7 +202,7 @@ void Menu_ExecuteNotifyEvent (WORD message) {
 					break;
 				case TN_MENU_INIT:
 					me_mi.fState = Menu_SetStartup(changed) ? MFS_CHECKED : MFS_UNCHECKED;
-					SetMenuItemInfo(me_menu, MAKELONG(ID_BUTTON_ICON, message), false &me_mi);
+					SetMenuItemInfo(me_menu, MAKELONG(ID_BUTTON_ICON, message), false, &me_mi);
 					break;
 				case TN_MENU_RT:
 					Menu_SetRTContext(changed);
@@ -215,7 +219,7 @@ void Menu_AddNotifyIcon () {
 	me_nid.uID = 0;
 	me_nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
 	me_nid.uCallbackMessage = WM_ICONNOTIFY;
-	wcscpy(me_nid.szTip, WINDOW_MAIN_CAPTION);
+	wcscpy_s(me_nid.szTip, ARRAYSIZE(me_nid.szTip), WINDOW_MAIN_CAPTION);
 	me_nid.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 	
 	Shell_NotifyIcon(NIM_ADD, &me_nid);
@@ -237,8 +241,8 @@ void Menu_InfoNotifyIcon (LPCWSTR title, LPCWSTR info, int len) {
 	me_nid.dwInfoFlags = NIIF_INFO | NIIF_NOSOUND;
 	
 	//Add Info
-	wcscpy(me_nid.szInfoTitle, title);
-	wcscpy(me_nid.szInfo, info);
+	wcscpy_s(me_nid.szInfoTitle, ARRAYSIZE(me_nid.szInfoTitle), title);
+	wcscpy_s(me_nid.szInfo, ARRAYSIZE(me_nid.szInfo), info);
 	
 	Shell_NotifyIcon(NIM_MODIFY, &me_nid);
 	

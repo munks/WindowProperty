@@ -10,7 +10,7 @@ DWORD p_dlgType;
 
 //Internal
 
-LRESULT CALLBACK HotkeyProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK HotkeyProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	
 	#ifdef _DEBUG
 	Debug_ConvertWindowMessage(uMsg);
@@ -28,8 +28,8 @@ LRESULT CALLBACK HotkeyProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			DialogEventCase(EventDialog()) {
 				DialogEvent(ID_BUTTON_HK_CONFIRM) {
 					if (EventMessage() == BN_CLICKED) {
-						Util_SetHotkey(HOTKEY_MOVE, SendDlgItemMessage(hwnd, ID_HOTKEY_MA, HKM_GETHOTKEY, 0, 0));
-						Util_SetHotkey(HOTKEY_CURSOR, SendDlgItemMessage(hwnd, ID_HOTKEY_CC, HKM_GETHOTKEY, 0, 0));
+						Util_SetHotkey(HOTKEY_MOVE, (DWORD)SendDlgItemMessage(hwnd, ID_HOTKEY_MA, HKM_GETHOTKEY, 0, 0));
+						Util_SetHotkey(HOTKEY_CURSOR, (DWORD)SendDlgItemMessage(hwnd, ID_HOTKEY_CC, HKM_GETHOTKEY, 0, 0));
 						EndDialog(hwnd, 0);
 					}
 					break;
@@ -61,14 +61,9 @@ LRESULT CALLBACK HotkeyProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	HWND tmphwnd;
-	wchar_t cls[256];
-	wchar_t val[256];
-	DWORD len;
-	HKEY key;
+static LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HANDLE handle;
-	FILETIME ft[4];
+	FILETIME ft[4] = {0};
 	
 	#ifdef _DEBUG
 	Debug_ConvertWindowMessage(uMsg);
@@ -191,7 +186,7 @@ LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return 0;
 }
 
-LRESULT CALLBACK NameProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK NameProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 		
 	#ifdef _DEBUG
@@ -237,11 +232,17 @@ LRESULT CALLBACK NameProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return 0;
 }
 
-int CheckAbsolutePath (const wchar_t* name) {
-	wchar_t checker[MAX_PATH];
-	
-	GetModuleFileName(NULL, checker, MAX_PATH);
-	wcscpy(wcsrchr(checker, L'\\') + 1, name);
+static int CheckAbsolutePath (const wchar_t* name) {
+	wchar_t checker[MAX_PATH] = {0};
+	wchar_t* lastSlash;
+
+	GetModuleFileName(NULL, checker, ARRAYSIZE(checker));
+
+	lastSlash = wcsrchr(checker, L'\\');
+	if (lastSlash == NULL) { return 1; }
+	*(lastSlash + 1) = L'\0';
+
+	wcscat_s(checker, ARRAYSIZE(checker), name);
 	
 	if (_waccess(checker, 0)) {
 		Menu_InfoNotifyIcon(LOG_NO_PROGRAM, name, 3000);
@@ -251,17 +252,17 @@ int CheckAbsolutePath (const wchar_t* name) {
 	return 0;
 }
 
-HINSTANCE ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pid) {
-	wchar_t mainpath[MAX_PATH];
-	wchar_t exepath[MAX_PATH];
-	wchar_t params[MAX_PATH];
+static HINSTANCE ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pid) {
+	wchar_t mainpath[MAX_PATH] = {0};
+	wchar_t exepath[MAX_PATH] = {0};
+	wchar_t params[MAX_PATH] = {0};
 	SHELLEXECUTEINFO sei = {};
 	
 	GetModuleFileName(NULL, mainpath, MAX_PATH);
 	*(wcsrchr(mainpath, L'\\') + 1) = L'\0';
 	
-	swprintf(exepath, L"%ls%ls", mainpath, exe);
-	swprintf(params, L"%d \"%ls%ls\"", pid, mainpath, dll);
+	swprintf_s(exepath, ARRAYSIZE(exepath), L"%ls%ls", mainpath, exe);
+	swprintf_s(params, ARRAYSIZE(params), L"%d \"%ls%ls\"", pid, mainpath, dll);
 	
 	sei.cbSize = sizeof(SHELLEXECUTEINFO);
 	sei.lpVerb = L"runas";
@@ -272,14 +273,14 @@ HINSTANCE ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, ULONG pi
 	#ifdef _DEBUG
 	wprintf(L"ShellExecute: %ls %ls\n", exepath, params);
 	#endif
-	
-	return ShellExecuteEx(&sei);
+	ShellExecuteEx(&sei);
+	return sei.hInstApp;
 }
 
-#define IntToStr(s, i) case i: wcscpy(s, L"##i##"); break;
+#define IntToStr(s, i) case i: wcscpy_s(s, ARRAYSIZE(s), L"##i##"); break;
 
-wchar_t* FormatSEError (INT_PTR err) {
-	static wchar_t str[25];
+static wchar_t* FormatSEError (INT_PTR err) {
+	static wchar_t str[25] = {0};
 	
 	switch (err) {
 		IntToStr(str, ERROR_FILE_NOT_FOUND);
@@ -295,7 +296,7 @@ wchar_t* FormatSEError (INT_PTR err) {
 		IntToStr(str, SE_ERR_OOM);
 		IntToStr(str, SE_ERR_SHARE);
 		default:
-			swprintf(str, L"%d", err);
+			swprintf_s(str, ARRAYSIZE(str), L"%d", (int)err);
 			break;
 	}
 	
@@ -350,7 +351,7 @@ void Process_WindowOpacityChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	AssertWin(SetLayeredWindowAttributes(hwnd, 0, alpha, LWA_ALPHA));
 	SetWindowRenew(hwnd);
 	
-	Log_Message(LOG_FORMAT_OPACITY, LOG_SET_OPACITY, name, (wchar_t*)percent);
+	Log_Message(LOG_FORMAT_OPACITY, LOG_SET_OPACITY, name, percent);
 }
 
 void Process_WindowFullScreenChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
@@ -385,11 +386,10 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	HANDLE handle;
 	BOOL iswow64;
 	ULONG pid;
-	wchar_t param[30];
 	wchar_t exe[22];
-	wchar_t dll[18];
-	BYTE val;
-	DWORD wda;
+	wchar_t dll[22];
+	BYTE val	= 0;
+	DWORD wda	= WDA_NONE;
 	INT_PTR err;
 	
 	pid = Util_GetProcessID(hwnd);
@@ -403,8 +403,8 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	AssertWin(IsWow64Process(handle, &iswow64));
 	CloseHandle(handle);
 	
-	wcscpy(exe, !iswow64 ? L"dllinjector_x64.exe" : L"dllinjector_x86.exe");
-	wcscpy(dll, !iswow64 ? L"cmdcapture_x64.dll" : L"cmdcapture_x86.dll");
+	wcscpy_s(exe, ARRAYSIZE(exe), !iswow64 ? L"dllinjector_x64.exe" : L"dllinjector_x86.exe");
+	wcscpy_s(dll, ARRAYSIZE(dll), !iswow64 ? L"cmdcapture_x64.dll" : L"cmdcapture_x86.dll");
 	
 	if (CheckAbsolutePath(exe)) { return; }
 	if (CheckAbsolutePath(dll)) { return; }
@@ -423,7 +423,7 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 			break;
 	}
 	RegSetValueEx(m_regkey, L"LastHook", 0, REG_BINARY, &val, sizeof(BYTE));
-	err = (INT_PTR)ExecuteFromAbsolutePath(m_main, exe, dll, pid);
+	err = ((INT_PTR)ExecuteFromAbsolutePath(m_main, exe, dll, pid));
 	if (err > 32) {
 		switch (GetDlgCtrlID(ctrl)) {
 			case ID_BUTTON_CMD: {

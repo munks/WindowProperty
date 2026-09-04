@@ -49,7 +49,7 @@ void List_CreateWindow (HWND main) {
 	wc.hbrBackground = m_hbrush;
 	wc.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 
-	Util_CheckError((void*)MAKELONG(RegisterClassEx(&wc), 0));
+	Util_CheckError((void*)(INT_PTR)RegisterClassEx(&wc));
 	
 	//Create List Window
 	li_window = CreateWindowEx(WS_EX_TOPMOST, WINDOW_LIST_NAME, WINDOW_LIST_CAPTION,
