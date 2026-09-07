@@ -1,8 +1,21 @@
 #pragma once
 
-#define Util_CheckError(t) CheckErrorFunc(t, __FILEW__, __LINE__, #t)
+#define Util_CheckError(t) CheckErrorFunc(t, __FILE__, __LINE__, #t)
+template<typename T>
+bool CheckErrorFunc(T checkVar, LPCSTR file, int line, LPCSTR targetValName) {
+	if (checkVar == NULL) {
+		std::string errmsg = std::format(
+			"Window Processing Error\n"
+			"On File - {}, In Line - {}\n"
+			"Variable Name - {}, Error Code - {}",
+			file, line, targetValName, GetLastError());
+		MessageBoxA(nullptr, errmsg.c_str(), "Error", MB_OK | MB_ICONERROR);
+		Main_Close();
+	}
+
+	return true;
+}
 #define Util_PrintWindowsLastError() Util_PrintWindowsLastErrorInternal(__FILEW__, __FUNCTIONW__, __LINE__)
-bool CheckErrorFunc (void*, LPCWSTR, int, LPCSTR);
 ULONG Util_GetProcessID (HWND);
 bool Util_WindowFilter (HWND);
 DWORD Util_GetHotkey (DWORD, int);

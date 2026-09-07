@@ -39,7 +39,7 @@ LRESULT CALLBACK MoveHook (int nCode, WPARAM wParam, LPARAM lParam) {
 			break;
 		}
 	}
-	return CallNextHookEx(NULL, nCode, wParam, lParam);
+	return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
 
 DWORD WINAPI ClipCheck (LPVOID param) {
@@ -50,7 +50,7 @@ DWORD WINAPI ClipCheck (LPVOID param) {
 		ClipCursor(&rect);
 		Sleep(1);
 	}
-	ClipCursor(NULL);
+	ClipCursor(nullptr);
 	
 	return 0;
 }
@@ -87,9 +87,9 @@ void Hook_MoveHotkeyRegister (BOOL reg) {
 	//Button/Menu Icon/Registry set
 	Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_MOVE), reg);
 	if (reg) {
-		swprintf_s(txt, 30, MENU_MOVE_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_MOVE));
+		swprintf_s(txt, ARRAYSIZE(txt), MENU_MOVE_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_MOVE));
 	} else {
-		wcscpy_s(txt, 30, MENU_MOVE_TEXT);
+		wcscpy_s(txt, ARRAYSIZE(txt), MENU_MOVE_TEXT);
 	}
 	Menu_SetMenuString(TN_MENU_MOVE, txt);
 	Menu_SetMenuState(TN_MENU_MOVE, reg);
@@ -129,9 +129,9 @@ void Hook_ClipHotkeyRegister (BOOL reg) {
 	//Button/Menu Icon/Registry set
 	Button_SetCheck(GetDlgItem(m_main, ID_BUTTON_CLIP), reg);
 	if (reg) {
-		swprintf_s(txt, 30, MENU_CLIP_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_CURSOR));
+		swprintf_s(txt, ARRAYSIZE(txt), MENU_CLIP_TEXT_FORMAT, Util_GetHotkeyString(HOTKEY_CURSOR));
 	} else {
-		wcscpy_s(txt, 30, MENU_CLIP_TEXT);
+		wcscpy_s(txt, ARRAYSIZE(txt), MENU_CLIP_TEXT);
 	}
 	Menu_SetMenuString(TN_MENU_CLIP, txt);
 	Menu_SetMenuState(TN_MENU_CLIP, reg);
@@ -144,7 +144,7 @@ void Hook_ClipHotkeyRegister (BOOL reg) {
 
 void Hook_MouseHook () {
 	if (!h_hookMove) {
-		h_hookMove = SetWindowsHookEx(WH_MOUSE_LL, MoveHook, NULL, 0);
+		h_hookMove = SetWindowsHookEx(WH_MOUSE_LL, MoveHook, nullptr, 0);
 		Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_MOVE_ACTIVE, 3000);
 	} else {
 		UnhookWindowsHookEx(h_hookMove);
@@ -163,7 +163,7 @@ void Hook_ClipCursor () {
 	if (!h_hookClip) {
 		GetWindowRect(GetForegroundWindow(), &tmpRect);
 		if (ClipCursor(&tmpRect)) {
-			h_hookClip = CreateThread(NULL, 0, ClipCheck, (LPVOID)GetForegroundWindow(), 0, NULL);
+			h_hookClip = CreateThread(nullptr, 0, ClipCheck, (LPVOID)GetForegroundWindow(), 0, nullptr);
 			Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_ACTIVE, 3000);
 		} else {
 			Menu_InfoNotifyIcon(NOTIFY_HOTKEY, NOTIFY_CLIP_FAILED, 3000);

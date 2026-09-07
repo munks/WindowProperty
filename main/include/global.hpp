@@ -22,6 +22,8 @@ process.cpp - p_#Var
 //Include Standard
 #include <stdio.h>
 #include <wchar.h>
+#include <string>
+#include <format>
 #include <math.h>
 #include <time.h>
 #include <locale.h>
@@ -91,9 +93,9 @@ process.cpp - p_#Var
 	} WindowLoopEnd();
 */
 #define WindowLoop(pid) { \
-							HWND lt_tempHwnd = FindWindow(NULL,NULL); \
-							while (lt_tempHwnd != NULL) { \
+							HWND lt_tempHwnd = FindWindow(nullptr,nullptr); \
+							while (lt_tempHwnd != nullptr) { \
 								if (pid == Util_GetProcessID(lt_tempHwnd)) { \
-									if (GetParent(lt_tempHwnd) == NULL)
+									if (GetParent(lt_tempHwnd) == nullptr)
 #define WindowLoopEnd() } 	lt_tempHwnd = GetWindow(lt_tempHwnd, GW_HWNDNEXT); }}
 #define WindowLoopHandle() 	lt_tempHwnd

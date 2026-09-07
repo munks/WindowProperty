@@ -6,7 +6,6 @@ HMENU me_menu;
 
 MENUITEMINFO 		me_mi = {sizeof(MENUITEMINFO)};
 NOTIFYICONDATA 		me_nid = {};
-int 				me_infoCnt = 0;
 UINT_PTR 			me_timer = 0;
 
 //Internal
@@ -63,7 +62,7 @@ static bool Menu_SetStartup (BOOL add) {
 	tac->Create(TASK_ACTION_EXEC, &ta);
 
 	CHECK_HR_REMOVE(ta->QueryInterface(IID_IExecAction, (LPVOID*)&tea));
-	GetModuleFileName(NULL, path, MAX_PATH);
+	GetModuleFileName(nullptr, path, MAX_PATH);
 	tea->put_Path(_bstr_t(path));
 	tea->put_Arguments(_bstr_t(L"-hide"));
 
@@ -92,21 +91,21 @@ static void Menu_SetRTContext (BOOL add) {
 	wchar_t path[MAX_PATH];
 	wchar_t regval[MAX_PATH];
 	
-	GetModuleFileName(NULL, path, MAX_PATH);
+	GetModuleFileName(nullptr, path, MAX_PATH);
 	
-	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
+	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &tmpkey, nullptr);
 	if (!add) {
-		RegDeleteTree(tmpkey, NULL);
+		RegDeleteTree(tmpkey, nullptr);
 		RegCloseKey(tmpkey);
 		RegDeleteKey(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker");
 	} else {
-		wcscpy_s(regval, MAX_PATH, BUTTON_RUNTIME_CAPTION);
-		RegSetValueEx(tmpkey, NULL, 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
-		swprintf_s(regval, MAX_PATH, L"\"%ls\",0", path);
+		wcscpy_s(regval, ARRAYSIZE(regval), BUTTON_RUNTIME_CAPTION);
+		RegSetValueEx(tmpkey, nullptr, 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
+		swprintf_s(regval, ARRAYSIZE(regval), L"\"%ls\",0", path);
 		RegSetValueEx(tmpkey, L"Icon", 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
-		RegCreateKeyEx(tmpkey, L"command", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey2, NULL);
-		swprintf_s(regval, MAX_PATH, L"\"%ls\" -rtcheck \"%%1\"", path);
-		RegSetValueEx(tmpkey2, NULL, 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
+		RegCreateKeyEx(tmpkey, L"command", 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &tmpkey2, nullptr);
+		swprintf_s(regval, ARRAYSIZE(regval), L"\"%ls\" -rtcheck \"%%1\"", path);
+		RegSetValueEx(tmpkey2, nullptr, 0, REG_SZ, (BYTE*)regval, (DWORD)((wcslen(regval) + 1) * 2));
 		RegCloseKey(tmpkey);
 		RegCloseKey(tmpkey2);
 	}
@@ -117,7 +116,7 @@ static void Menu_DeleteNotifyIcon (HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD
 	ZeroMemory(me_nid.szInfo, sizeof(me_nid.szInfo));
 	Shell_NotifyIcon(NIM_MODIFY, &me_nid);
 	
-	KillTimer(NULL, me_timer);
+	KillTimer(nullptr, me_timer);
 	me_timer = 0;
 }
 
@@ -135,14 +134,15 @@ bool Menu_TaskSchedulerInit () {
 	(void)CoInitializeSecurity(nullptr, -1, nullptr, nullptr, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, 0, nullptr);
 
 	hr = tsvc.CoCreateInstance(CLSID_TaskScheduler);
-	if (FAILED(hr)) { return false; }
+	if (FAILED(hr)) { CoUninitialize(); return false; }
 
-	tsvc->Connect(_variant_t(), _variant_t(), _variant_t(), _variant_t());
-	if (FAILED(hr)) { return false; }
+	hr = tsvc->Connect(_variant_t(), _variant_t(), _variant_t(), _variant_t());
+	if (FAILED(hr)) { CoUninitialize(); return false; }
 	
-	tsvc->GetFolder(_bstr_t(L"\\"), &tf);
+	hr = tsvc->GetFolder(_bstr_t(L"\\"), &tf);
+	if (FAILED(hr)) { CoUninitialize(); return false; }
 
-	tf->GetTask(_bstr_t(L"WindowProperty"), &tr);
+	hr = tf->GetTask(_bstr_t(L"WindowProperty"), &tr);
 	Menu_SetMenuState(TN_MENU_INIT, SUCCEEDED(hr));
 
 	return true;
@@ -222,7 +222,7 @@ void Menu_AddNotifyIcon () {
 	wcscpy_s(me_nid.szTip, ARRAYSIZE(me_nid.szTip), WINDOW_MAIN_CAPTION);
 	me_nid.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 	
-	Shell_NotifyIcon(NIM_ADD, &me_nid);
+	Util_CheckError(Shell_NotifyIcon(NIM_ADD, &me_nid));
 }
 
 void Menu_RemoveNotifyIcon () {
@@ -233,10 +233,9 @@ void Menu_RemoveNotifyIcon () {
 
 void Menu_InfoNotifyIcon (LPCWSTR title, LPCWSTR info, int len) {
 	//Log
-	Log_Message(LOG_FORMAT_NORMAL, title, info, NULL);
+	Log_Message(LOG_FORMAT_NORMAL, title, info, nullptr);
 	
 	//Init
-	me_infoCnt++;
 	me_nid.uFlags = NIF_INFO;
 	me_nid.dwInfoFlags = NIIF_INFO | NIIF_NOSOUND;
 	
@@ -248,9 +247,9 @@ void Menu_InfoNotifyIcon (LPCWSTR title, LPCWSTR info, int len) {
 	
 	//Wait
 	if (me_timer) {
-		KillTimer(NULL, me_timer);
+		KillTimer(nullptr, me_timer);
 	}
-	me_timer = SetTimer(NULL, NOTIFY_DELETE, len, Menu_DeleteNotifyIcon);
+	me_timer = SetTimer(nullptr, NOTIFY_DELETE, len, Menu_DeleteNotifyIcon);
 }
 
 void Menu_MakeMenu () {
@@ -260,8 +259,8 @@ void Menu_MakeMenu () {
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_CLIP), MENU_CLIP_TEXT);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_INIT), MENU_START_TEXT);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_RT), MENU_RUNTIME_TEXT);
-	AppendMenu(me_menu, MF_SEPARATOR, 0, NULL);
+	AppendMenu(me_menu, MF_SEPARATOR, 0, nullptr);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_LOG), MENU_LOG_TEXT);
-	AppendMenu(me_menu, MF_SEPARATOR, 0, NULL);
+	AppendMenu(me_menu, MF_SEPARATOR, 0, nullptr);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_CLOSE), MENU_CLOSE_TEXT);
 }

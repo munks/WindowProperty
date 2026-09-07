@@ -11,4 +11,4 @@ void Menu_InfoNotifyIcon (LPCWSTR, LPCWSTR, int);
 
 extern HMENU me_menu;
 
-#define NOTIFY_DELETE 1
+constexpr DWORD NOTIFY_DELETE = 1;

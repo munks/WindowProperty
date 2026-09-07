@@ -10,16 +10,19 @@ void AttachDLL (HANDLE process, const wchar_t* dll) {
 	len = wcslen(dll) + 1;
 	
 	//Allocate/Write Memory
-	alloc = VirtualAllocEx(process, NULL, sizeof(wchar_t) * len, MEM_COMMIT, PAGE_READWRITE);
+	alloc = VirtualAllocEx(process, nullptr, sizeof(wchar_t) * len, MEM_COMMIT, PAGE_READWRITE);
 	if (!alloc) {
 		puts("VirtualAllocEx Error");
 		return;
 	}
 	
-	WriteProcessMemory(process, alloc, (void*)dll, sizeof(wchar_t) * len, NULL);
+	if (!WriteProcessMemory(process, alloc, dll, sizeof(wchar_t) * len, nullptr)) {
+		puts("WriteProcessMemory Error");
+		goto THREADCLOSE;
+	}
 	
 	//Run Thread
-	thread = CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)LoadLibraryW, alloc, 0, NULL);
+	thread = CreateRemoteThread(process, nullptr, 0, (LPTHREAD_START_ROUTINE)LoadLibraryW, alloc, 0, nullptr);
 	if (!thread) {
 		puts("CreateRemoteThread Error");
 		goto THREADCLOSE;
@@ -29,7 +32,7 @@ void AttachDLL (HANDLE process, const wchar_t* dll) {
 	
 	CloseHandle(thread);
 	THREADCLOSE:
-	VirtualFreeEx(process, alloc, sizeof(wchar_t) * len, MEM_DECOMMIT);
+	VirtualFreeEx(process, alloc, 0, MEM_RELEASE);
 	return;
 }
 
@@ -58,16 +61,19 @@ void ProcessCommandLine (ULONG pid, const wchar_t* dll) {
 }
 
 void SetTokenPrivileges() {
-	HANDLE token;
+	HANDLE token = nullptr;
 	TOKEN_PRIVILEGES tp;
 	LUID luid;
 
-	OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token);
-	LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid);
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) { return; }
+	if (!LookupPrivilegeValue(nullptr, SE_DEBUG_NAME, &luid)) {
+		CloseHandle(token);
+		return;
+	}
 	tp.PrivilegeCount = 1;
 	tp.Privileges[0].Luid = luid;
 	tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-	AdjustTokenPrivileges(token, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL);
+	AdjustTokenPrivileges(token, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), nullptr, nullptr);
 	CloseHandle(token);
 }
 

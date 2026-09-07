@@ -49,21 +49,21 @@ void List_CreateWindow (HWND main) {
 	wc.hbrBackground = m_hbrush;
 	wc.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 
-	Util_CheckError((void*)(INT_PTR)RegisterClassEx(&wc));
+	Util_CheckError(RegisterClassEx(&wc));
 	
 	//Create List Window
 	li_window = CreateWindowEx(WS_EX_TOPMOST, WINDOW_LIST_NAME, WINDOW_LIST_CAPTION,
 							  WS_POPUP | WS_CAPTION | WS_SYSMENU,
 							  CW_USEDEFAULT, CW_USEDEFAULT, 600, 300,
-							  main, NULL, m_hInstance, NULL);
+							  main, nullptr, m_hInstance, nullptr);
 	Util_CheckError(li_window);
 	
 	//Create List Message Box
-	li_edit = CreateWindow(L"EDIT", NULL,
+	li_edit = CreateWindow(L"EDIT", nullptr,
 							WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL |
 							ES_MULTILINE | ES_READONLY,
 							10,10,570,250,
-							li_window, (HMENU)ID_EDIT_LIST, m_hInstance, NULL);
+							li_window, (HMENU)ID_EDIT_LIST, m_hInstance, nullptr);
 	SetWindowFont(li_edit, m_font, FALSE);
 	Util_CheckError(li_edit);
 }

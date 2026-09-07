@@ -26,15 +26,15 @@ static void Control_CreateTooltip (HWND hwnd, HWND hitem, LPCWSTR tooltip) {
 	wchar_t txt[MAX_PATH];
 	TOOLINFO ti = { 0 };
 	
-	tmphwnd = CreateWindow(TOOLTIPS_CLASS, NULL,
+	tmphwnd = CreateWindow(TOOLTIPS_CLASS, nullptr,
 							WS_POPUP | TTS_ALWAYSTIP,
 							CW_USEDEFAULT, CW_USEDEFAULT,
 							CW_USEDEFAULT, CW_USEDEFAULT,
-							hwnd, NULL, 
-							m_hInstance, NULL);
+							hwnd, nullptr, 
+							m_hInstance, nullptr);
 	Util_CheckError(tmphwnd);
 	
-	wcsncpy_s(txt, MAX_PATH, tooltip, _TRUNCATE);
+	wcsncpy_s(txt, ARRAYSIZE(txt), tooltip, _TRUNCATE);
 	
 	ti.cbSize = sizeof(ti) - sizeof(void*);
 	ti.hwnd = hwnd;
@@ -66,7 +66,7 @@ HWND Control_CreateButton (HWND hwnd, LPCWSTR caption, LPCWSTR tooltip, bool che
 							WS_BORDER | WS_CHILD | WS_VISIBLE | WS_TABSTOP |
 							BS_CENTER | BS_VCENTER | checkbox * BS_AUTOCHECKBOX,
 							x, y, w, h,
-							hwnd, (HMENU)idtf, m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, nullptr);
 	Util_CheckError(tmphwnd);
 	
 	#ifdef _DEBUG
@@ -85,10 +85,10 @@ HWND Control_CreateButton (HWND hwnd, LPCWSTR caption, LPCWSTR tooltip, bool che
 HWND Control_CreateEdit (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h, INT_PTR idtf, LPCWSTR txt) {
 	HWND tmphwnd;
 	
-	tmphwnd = CreateWindow(L"EDIT", NULL,
+	tmphwnd = CreateWindow(L"EDIT", nullptr,
 							WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER,
 							x, y, w, h,
-							hwnd, (HMENU)idtf, m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, nullptr);
 	Util_CheckError(tmphwnd);
 	
 	#ifdef _DEBUG
@@ -108,10 +108,10 @@ HWND Control_CreateEdit (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, int h,
 HWND Control_CreateStatic (HWND hwnd, int x, int y, int w, int h, INT_PTR idtf, LPCWSTR txt) {
 	HWND tmphwnd;
 	
-	tmphwnd = CreateWindow(L"STATIC", NULL,
+	tmphwnd = CreateWindow(L"STATIC", nullptr,
 							WS_CHILD | WS_VISIBLE | SS_CENTER,
 							x, y, w, h,
-							hwnd, (HMENU)idtf, m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, nullptr);
 	Util_CheckError(tmphwnd);
 	
 	#ifdef _DEBUG
@@ -128,11 +128,11 @@ void Control_CreateListView (HWND hwnd, LPCWSTR tooltip, int x, int y, int w, in
 	LVCOLUMNW col = {0, };
 	
 	//Make Control
-	c_listView = CreateWindow(WC_LISTVIEWW, NULL,
+	c_listView = CreateWindow(WC_LISTVIEWW, nullptr,
 							LVS_REPORT | LVS_SINGLESEL | LVS_NOSORTHEADER | LVS_SHOWSELALWAYS |
 							WS_CHILD | WS_VISIBLE | WS_BORDER,
 							x, y, w, h,
-							hwnd, (HMENU)idtf, m_hInstance, NULL);
+							hwnd, (HMENU)idtf, m_hInstance, nullptr);
 	Util_CheckError(c_listView);
 	
 	#ifdef _DEBUG
@@ -179,7 +179,7 @@ void Control_RefreshListView () {
 		WindowLoop(ProcessLoopID()) {
 			if (Util_WindowFilter(WindowLoopHandle())) {
 				icon = (HICON)GetClassLongPtr(WindowLoopHandle(), GCLP_HICON);
-				IL_ReplaceIcon(c_imageList, -1, icon ? icon : LoadIcon(NULL, IDI_APPLICATION));
+				IL_ReplaceIcon(c_imageList, -1, icon ? icon : LoadIcon(nullptr, IDI_APPLICATION));
 				outputText[0] = L'\0';
 				_repeat (i, LV_MAX_COL) {
 					switch (i) {

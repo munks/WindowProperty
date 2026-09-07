@@ -6,18 +6,6 @@ LONG_PTR u_filter[2][2] = {{WS_VISIBLE, 0}, {0, WS_EX_TOOLWINDOW | WS_EX_NOREDIR
 
 //Internal
 
-bool CheckErrorFunc (void* checkVar, LPCWSTR file, int line, LPCSTR targetValName) {
-	char errmsg[150];
-	
-	if (checkVar == NULL) {
-		sprintf_s(errmsg, ARRAYSIZE(errmsg), "Window Processing Error\nOn File - %ls, In Line - %d\nVariable Name - %s, Error Code - %d", file, line, targetValName, GetLastError());
-		MessageBoxA(NULL, errmsg, "Error", MB_OK | MB_ICONERROR);
-		Main_Close();
-	}
-	
-	return true;
-}
-
 static wchar_t* Util_GetHotkeyRegkey (DWORD hotkey) {
 	static wchar_t str[20] = {0};
 	
@@ -29,7 +17,7 @@ static wchar_t* Util_GetHotkeyRegkey (DWORD hotkey) {
 			wcscpy_s(str, ARRAYSIZE(str), L"CursorActiveKey");
 			break;
 		default:
-			return NULL;
+			return nullptr;
 	}
 	
 	return str;
@@ -106,7 +94,7 @@ DWORD Util_GetHotkey (DWORD hotkey, int type) {
 	WORD data;
 	BYTE vk, ak;
 	
-	result = RegGetValue(m_regkey, NULL, Util_GetHotkeyRegkey(hotkey), RRF_RT_DWORD, NULL, &tmp, &(size = 4));
+	result = RegGetValue(m_regkey, nullptr, Util_GetHotkeyRegkey(hotkey), RRF_RT_DWORD, nullptr, &tmp, &(size = 4));
 	
 	if (result) {
 		return 0;
@@ -140,7 +128,7 @@ LPWSTR Util_GetHotkeyString (DWORD hotkey) {
 	WORD data;
 	BYTE vk, ak;
 	
-	result = RegGetValue(m_regkey, NULL, Util_GetHotkeyRegkey(hotkey), RRF_RT_DWORD, NULL, &tmp, &(size = 4));
+	result = RegGetValue(m_regkey, nullptr, Util_GetHotkeyRegkey(hotkey), RRF_RT_DWORD, nullptr, &tmp, &(size = 4));
 	
 	if (result) {
 		wcscpy_s(out, ARRAYSIZE(out), VK_NONE);
@@ -164,7 +152,7 @@ LPWSTR Util_GetHotkeyString (DWORD hotkey) {
 LSTATUS Util_SetHotkey (DWORD hotkey, DWORD vk) {
 	wchar_t* keystr = Util_GetHotkeyRegkey(hotkey);
 	
-	if (keystr == NULL) {
+	if (keystr == nullptr) {
 		return ERROR_INVALID_DATA;
 	}
 	
@@ -173,15 +161,15 @@ LSTATUS Util_SetHotkey (DWORD hotkey, DWORD vk) {
 
 void Util_PrintWindowsLastErrorInternal (LPCWSTR file, LPCWSTR func, int line) {
 	wchar_t txt[260];
-	LPWSTR msg = NULL;
+	LPWSTR msg = nullptr;
 	
 	FormatMessage(	FORMAT_MESSAGE_ALLOCATE_BUFFER |
 					FORMAT_MESSAGE_FROM_SYSTEM | 
 					FORMAT_MESSAGE_IGNORE_INSERTS,
-					NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					(LPWSTR)&msg, 0, NULL);
+					nullptr, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					(LPWSTR)&msg, 0, nullptr);
 	swprintf_s(txt, ARRAYSIZE(txt), L"In File: %s\nIn Function: %s\nIn Line: %d\nError Code: %d\n%ls", file, func, line, GetLastError(), msg);
-	MessageBox(NULL, txt, L"GetLastError", MB_OK);
+	MessageBox(nullptr, txt, L"GetLastError", MB_OK);
 	
 	LocalFree(msg);
 }
@@ -190,11 +178,11 @@ void Util_PrintInt (int i) {
 	char txt[260];
 	
 	sprintf_s(txt, ARRAYSIZE(txt), "%d", i);
-	MessageBoxA(NULL, txt, "Num.", MB_OK);
+	MessageBoxA(nullptr, txt, "Num.", MB_OK);
 }
 
 void Util_PrintString (const wchar_t* str) {
-	MessageBox(NULL, str, L"Str.", MB_OK);
+	MessageBox(nullptr, str, L"Str.", MB_OK);
 }
 
 DWORD Util_GetWDAState (HWND hwnd) {

@@ -10,6 +10,8 @@ HKEY m_regkey;
 HKEY m_regset;
 HKEY m_regrec;
 
+static UINT WM_TASKBARCREATED = RegisterWindowMessage(L"TaskbarCreated");
+
 //External
 
 void Main_Close () {
@@ -33,7 +35,7 @@ static void Main_DeleteRegistryVer0() {
 	DWORD len;
 	wchar_t key[256];
 	
-	while (RegEnumKeyEx(m_regset, idx, key, &(len = 256), NULL, NULL, NULL, NULL) == ERROR_SUCCESS) {
+	while (RegEnumKeyEx(m_regset, idx, key, &(len = 256), nullptr, nullptr, nullptr, nullptr) == ERROR_SUCCESS) {
 		RegDeleteTree(m_regset, key);
 		RegDeleteKey(m_regset, key);
 	}
@@ -41,7 +43,7 @@ static void Main_DeleteRegistryVer0() {
 static void Main_DeleteRegistryVer1() {
 	HKEY tmpkey;
 
-	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &tmpkey, NULL);
+	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &tmpkey, nullptr);
 	RegDeleteValue(tmpkey, L"WindowProperty");
 	RegCloseKey(tmpkey);
 }
@@ -49,7 +51,7 @@ static void Main_DeleteRegistryVer1() {
 static void Main_VersionCheck (DWORD ver) {
 	DWORD reg, size;
 	
-	RegGetValue(m_regkey, NULL, L"Version", RRF_RT_REG_DWORD, NULL, &(reg = 0), &(size = sizeof(DWORD)));
+	RegGetValue(m_regkey, nullptr, L"Version", RRF_RT_REG_DWORD, nullptr, &(reg = 0), &(size = sizeof(DWORD)));
 
 	switch (reg) {
 		case 0:
@@ -97,11 +99,11 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 					pidhwnd[9] = L'\0';
 
 					tmphwnd = (HWND)(UINT_PTR)_wtoi(pidhwnd);
-					changed = GetLayeredWindowAttributes(tmphwnd, NULL, &alpha, NULL);
+					changed = GetLayeredWindowAttributes(tmphwnd, nullptr, &alpha, nullptr);
 					
 					Button_SetText(GetDlgItem(hwnd, ID_BUTTON_CAPTURE),
 								Util_GetWDAState(tmphwnd) ? BUTTON_CAPTURE_CAPTION : BUTTON_CAPTURE_CAPTION_2);
-					swprintf_s(text, 4, L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
+					swprintf_s(text, ARRAYSIZE(text), L"%d", changed ? (int)ceil(alpha / 255.0 * 100.0) : 100);
 					SetDlgItemText(hwnd, ID_EDIT_ALPHA, text);
 					break;
 				}
@@ -110,15 +112,19 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		}
 		WindowEvent(WM_COPYDATA) {
 			if (((COPYDATASTRUCT*)lParam)->dwData == 1) {
-				wcscpy_s(path, MAX_PATH, (LPWSTR)((COPYDATASTRUCT*)lParam)->lpData);
+				wcscpy_s(path, ARRAYSIZE(path), (LPWSTR)((COPYDATASTRUCT*)lParam)->lpData);
 				Thread_CreateThreadProcess(path);
 			}
 			break;
 		}
 		WindowEvent(WM_SYSCOMMAND) {
-			if (wParam != SC_RESTORE) {
-				break;
+			switch (wParam & 0xFFF0) {
+				//Hide Window Instead Of Closing
+				case SC_CLOSE:
+					AnimateWindow(hwnd, 200, AW_HIDE | AW_BLEND);
+					return 0;
 			}
+			[[fallthrough]];
 		}
 		WindowEvent(WM_SHOWWINDOW) [[fallthrough]];
 		WindowEvent(WM_TIMER) [[fallthrough]];
@@ -141,7 +147,7 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				DialogEvent(ID_BUTTON_FILTER) {
 					if (EventMessage() == BN_CLICKED) {
 						//Change Window Property
-						void (*executionFunc)(HWND, HWND, LPCWSTR) = NULL;
+						void (*executionFunc)(HWND, HWND, LPCWSTR) = nullptr;
 						bool absolute = false;
 						
 						switch (EventDialog()) {
@@ -168,13 +174,13 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 								executionFunc = Process_ChangeFilter; absolute = true; break;
 						}
 						if (absolute) {
-							executionFunc(NULL, NULL, NULL);
+							executionFunc(nullptr, nullptr, nullptr);
 						} else {
 							if (c_listViewIndex == -1) { break; }
 							
-							if (executionFunc == NULL) { break; }
+							if (executionFunc == nullptr) { break; }
 							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 0, name, 30);
-							if (name[0] == L'*') { wcscpy_s(name, 30, name + 1); }
+							if (name[0] == L'*') { wcscpy_s(name, ARRAYSIZE(name), name + 1); }
 							
 							//Selected Process Execution
 							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
@@ -206,17 +212,17 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				DialogEvent(ID_EDIT_ALPHA) {
 					//Edit Control Limit(0~100)
 					if (EventMessage() == EN_UPDATE) {
-						value = GetDlgItemInt(hwnd, ID_EDIT_ALPHA, NULL, false);
+						value = GetDlgItemInt(hwnd, ID_EDIT_ALPHA, nullptr, false);
 						tmphwnd = (HWND)lParam;
 						
 						Edit_GetText(tmphwnd, text, 4);
 						if (value < 0) { value = 0; }
 						if (value > 100) { value = 100; }
 						if (((text[0] != L'0') || (wcslen(text) < 2)) && (text[0] != L'\0')) {
-							if (value == GetDlgItemInt(hwnd, ID_EDIT_ALPHA, NULL, false)) { break; }
+							if (value == GetDlgItemInt(hwnd, ID_EDIT_ALPHA, nullptr, false)) { break; }
 						}
 						
-						swprintf_s(text, 4, L"%d", value);
+						swprintf_s(text, ARRAYSIZE(text), L"%d", value);
 						Edit_SetText(tmphwnd, text);
 						Edit_SetSel(tmphwnd, 3, 3);
 					}
@@ -237,7 +243,7 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			if (lParam == WM_RBUTTONUP) {
 				GetCursorPos(&cursor);
 				SetForegroundWindow(hwnd);
-				TrackPopupMenu(me_menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON, cursor.x, cursor.y, 0, hwnd, NULL);
+				TrackPopupMenu(me_menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON, cursor.x, cursor.y, 0, hwnd, nullptr);
 			}
 			break;
 		}
@@ -247,12 +253,7 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		WindowEvent(WM_NCLBUTTONDBLCLK) {
 			return true;
 		}
-		//Hide Window Instead Of Closing
-		WindowEvent(WM_CLOSE) {
-			AnimateWindow(hwnd, 200, AW_HIDE | AW_BLEND);
-			return 0;
-		}
-		//Not Used
+		//WM_DESTROY Event for unexpected termination
 		WindowEvent(WM_DESTROY) {
 			PostQuitMessage(0);
 			return 0;
@@ -277,6 +278,26 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			}
 			break;
 		}
+		default: {
+			if (uMsg == WM_TASKBARCREATED) {
+				LSTATUS result;
+				HKEY hkey;
+
+				//Add System Tray Notify Icon
+				Menu_AddNotifyIcon();
+				Menu_MakeMenu();
+
+				//Get Registry (INIT)
+				result = RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, KEY_ALL_ACCESS, &hkey);
+				Menu_SetMenuState(TN_MENU_RT, result == ERROR_SUCCESS);
+				if (result == ERROR_SUCCESS) {
+					RegCloseKey(hkey);
+				}
+
+				//Init Task Scheduler COM And Get Task State
+				if (!Menu_TaskSchedulerInit()) { return 1; }
+			}
+		}
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -290,19 +311,15 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	LPWSTR* cmdArgs;
 	int cmdArgc;
 	COPYDATASTRUCT cds = {};
-	HKEY hkey;
-	LSTATUS result;
-	
+
 	//Command Line Processing
 	cmdArgs = CommandLineToArgvW(pCmdLine, &cmdArgc);
-	if (cmdArgs != NULL) {
+	if (cmdArgs != nullptr) {
 		for (int i = 0; i < cmdArgc; i++) {
-			wprintf(L"Command Line: %ls\n", cmdArgs[i]);
 			if (wcscmp(cmdArgs[i], L"-hide") == 0) { wndHide = true; }
 			if (wcscmp(cmdArgs[i], L"-rtcheck") == 0) {
 				i++;
 				if (i < cmdArgc) {
-					wprintf(L"Command Line: %ls\n", cmdArgs[i]);
 					cds.dwData = 1;
 					cds.cbData = (DWORD)(wcslen(cmdArgs[i]) * sizeof(wchar_t));
 					cds.lpData = (LPVOID)cmdArgs[i];
@@ -312,24 +329,18 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	}
 	
 	//Duplicate Prevent
-	hwndFind = FindWindow(WINDOW_MAIN_NAME, NULL);
-	if (hwndFind != NULL) {
+	hwndFind = FindWindow(WINDOW_MAIN_NAME, nullptr);
+	if (hwndFind != nullptr) {
 		SendMessage(hwndFind, WM_COPYDATA, 0, (LPARAM)&cds);
 		ShowWindow(hwndFind, SW_RESTORE);
 		SetForegroundWindow(hwndFind);
 		return 0;
 	}
 	
-	#ifdef _DEBUG
-	#if LANG == KOKR
-	setlocale(LC_ALL, "ko-KR");
-	#endif
-	#endif
-	
 	//Open Registry
-	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Duality\\WindowProperty", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regkey, NULL);
-	RegCreateKeyEx(m_regkey, L"Settings", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regset, NULL);
-	RegCreateKeyEx(m_regkey, L"Records", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &m_regrec, NULL);
+	RegCreateKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Duality\\WindowProperty", 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &m_regkey, nullptr);
+	RegCreateKeyEx(m_regkey, L"Settings", 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &m_regset, nullptr);
+	RegCreateKeyEx(m_regkey, L"Records", 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &m_regrec, nullptr);
 	
 	Main_VersionCheck(2);
 	
@@ -338,10 +349,10 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	m_hbrush = CreateSolidBrush(RGB(240,240,240));
 	m_font = CreateFont(16,0,0,0,0,0,0,0,HANGEUL_CHARSET,3,2,1,
 						VARIABLE_PITCH | FF_ROMAN, L"Ebrima");
-	RegGetValue(m_regset, NULL, L"FilterIncludeStyle", RRF_RT_DWORD, NULL, &u_filter[0][0], &(size = 4));
-	RegGetValue(m_regset, NULL, L"FilterExcludeStyle", RRF_RT_DWORD, NULL, &u_filter[0][1], &(size = 4));
-	RegGetValue(m_regset, NULL, L"FilterIncludeExStyle", RRF_RT_DWORD, NULL, &u_filter[1][0], &(size = 4));
-	RegGetValue(m_regset, NULL, L"FilterExcludeExStyle", RRF_RT_DWORD, NULL, &u_filter[1][1], &(size = 4));
+	RegGetValue(m_regset, nullptr, L"FilterIncludeStyle", RRF_RT_DWORD, nullptr, &u_filter[0][0], &(size = 4));
+	RegGetValue(m_regset, nullptr, L"FilterExcludeStyle", RRF_RT_DWORD, nullptr, &u_filter[0][1], &(size = 4));
+	RegGetValue(m_regset, nullptr, L"FilterIncludeExStyle", RRF_RT_DWORD, nullptr, &u_filter[1][0], &(size = 4));
+	RegGetValue(m_regset, nullptr, L"FilterExcludeExStyle", RRF_RT_DWORD, nullptr, &u_filter[1][1], &(size = 4));
 	
 	//Control Init
 	Control_InitDLL();
@@ -362,13 +373,13 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	wc.hbrBackground = m_hbrush;
 	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ID_ICON));
 	
-	Util_CheckError((void*)(UINT_PTR)RegisterClassEx(&wc));
+	Util_CheckError(RegisterClassEx(&wc));
 	
 	//Create Main Window
 	m_main = CreateWindowEx(WS_EX_TOPMOST, WINDOW_MAIN_NAME, WINDOW_MAIN_CAPTION,
 							WS_OVERLAPPED | WS_CAPTION | WS_POPUPWINDOW,
 							CW_USEDEFAULT, CW_USEDEFAULT, 600, 600,
-							NULL, NULL, hInstance, NULL);
+							nullptr, nullptr, hInstance, nullptr);
 	Util_CheckError(m_main);
 	
 	//Create Log/Hotkey Window
@@ -432,28 +443,13 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 520, ID_LIST);
 	Control_RefreshListView();
 	
-	//Add System Tray Notify Icon
-	Menu_AddNotifyIcon();
-	Menu_MakeMenu();
-	
 	//Get Registry (MOVE)
-	RegGetValue(m_regkey, NULL, L"MoveActive", RRF_RT_REG_BINARY, NULL, &regval, &(size = sizeof(BYTE)));
+	RegGetValue(m_regkey, nullptr, L"MoveActive", RRF_RT_REG_BINARY, nullptr, &regval, &(size = sizeof(BYTE)));
 	Hook_MoveHotkeyRegister(regval);
 	
 	//Get Registry (CLIP)
-	RegGetValue(m_regkey, NULL, L"CursorActive", RRF_RT_REG_BINARY, NULL, &regval, &(size = sizeof(BYTE)));
+	RegGetValue(m_regkey, nullptr, L"CursorActive", RRF_RT_REG_BINARY, nullptr, &regval, &(size = sizeof(BYTE)));
 	Hook_ClipHotkeyRegister(regval);
-	
-	//Get Registry (INIT)
-	result = RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, KEY_ALL_ACCESS, &hkey);
-	Menu_SetMenuState(TN_MENU_RT, result == ERROR_SUCCESS);
-	if (result == ERROR_SUCCESS) {
-		RegCloseKey(hkey);
-	}
-	
-	//Init Task Scheduler COM And Get Task State
-	if (!Menu_TaskSchedulerInit()) { return 1; }
-
 
 	//SetTimer (Refresh List-View)
 	SetTimer(m_main, 1, 200, nullptr);
@@ -468,7 +464,7 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	
 	//Message Loop
 	MSG msg = {};
-	while (GetMessage(&msg, NULL, 0, 0) > 0) {
+	while (GetMessage(&msg, nullptr, 0, 0) > 0) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}

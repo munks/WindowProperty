@@ -76,14 +76,14 @@ static LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			//Set Style Button
 			switch (p_dlgType) {
 				case TYPE_DLG_PROP: {
-					DlgFunction_PropInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, NULL, true);
+					DlgFunction_PropInit(hwnd, &p_currentProp[0], &p_currentProp[1], false, nullptr, true);
 					
 					handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, Util_GetProcessID(p_tdata.hwnd));
 					if (handle) {
 						GetProcessTimes(handle, &p_tdata.ft, &ft[0], &ft[1], &ft[2]);
 						CloseHandle(handle);
 						p_tdata.timer = GetDlgItem(hwnd, ID_STATIC_TIME);
-						CreateThread(NULL, 0, DlgFunction_SystemTimeLoop, &p_tdata, 0, NULL);
+						CreateThread(nullptr, 0, DlgFunction_SystemTimeLoop, &p_tdata, 0, nullptr);
 					} else {
 						SetWindowText(GetDlgItem(hwnd, ID_STATIC_TIME), DLG_PROP_TIME_ACC_DENIED);
 					}
@@ -164,13 +164,13 @@ static LRESULT CALLBACK PropProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				//Open Link (Style Description
 				DialogEvent(ID_STATIC_STYLE) {
 					if (EventMessage() == STN_CLICKED) {
-						ShellExecute(NULL, L"open", LINK_STYLE, NULL, NULL, SW_SHOWNORMAL);
+						ShellExecute(nullptr, L"open", LINK_STYLE, nullptr, nullptr, SW_SHOWNORMAL);
 					}
 					break;
 				}
 				DialogEvent(ID_STATIC_EXSTYLE) {
 					if (EventMessage() == STN_CLICKED) {
-						ShellExecute(NULL, L"open", LINK_EXSTYLE, NULL, NULL, SW_SHOWNORMAL);
+						ShellExecute(nullptr, L"open", LINK_EXSTYLE, nullptr, nullptr, SW_SHOWNORMAL);
 					}
 					break;
 				}
@@ -236,10 +236,10 @@ static int CheckAbsolutePath (const wchar_t* name) {
 	wchar_t checker[MAX_PATH] = {0};
 	wchar_t* lastSlash;
 
-	GetModuleFileName(NULL, checker, ARRAYSIZE(checker));
+	GetModuleFileName(nullptr, checker, ARRAYSIZE(checker));
 
 	lastSlash = wcsrchr(checker, L'\\');
-	if (lastSlash == NULL) { return 1; }
+	if (lastSlash == nullptr) { return 1; }
 	*(lastSlash + 1) = L'\0';
 
 	wcscat_s(checker, ARRAYSIZE(checker), name);
@@ -258,7 +258,7 @@ static HINSTANCE ExecuteFromAbsolutePath (HWND main, LPCWSTR exe, LPCWSTR dll, U
 	wchar_t params[MAX_PATH] = {0};
 	SHELLEXECUTEINFO sei = {};
 	
-	GetModuleFileName(NULL, mainpath, MAX_PATH);
+	GetModuleFileName(nullptr, mainpath, MAX_PATH);
 	*(wcsrchr(mainpath, L'\\') + 1) = L'\0';
 	
 	swprintf_s(exepath, ARRAYSIZE(exepath), L"%ls%ls", mainpath, exe);
@@ -319,11 +319,11 @@ void Process_WindowPropChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 		//Set TOPMOST
 		AssertWin(SetWindowPos(	hwnd, p_currentProp[1] & WS_EX_TOPMOST ? HWND_TOPMOST : HWND_NOTOPMOST,
 								0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED));
-		Log_Message(LOG_FORMAT_NORMAL, LOG_SET_PROP, name, NULL);
+		Log_Message(LOG_FORMAT_NORMAL, LOG_SET_PROP, name, nullptr);
 	}
 	
-	p_tdata.hwnd = NULL;
-	p_tdata.timer = NULL;
+	p_tdata.hwnd = nullptr;
+	p_tdata.timer = nullptr;
 	p_tdata.ft.dwHighDateTime = 0;
 	p_tdata.ft.dwLowDateTime = 0;
 }
@@ -334,7 +334,7 @@ void Process_WindowCaptionChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_NAME), m_main, NameProc)) {
 		AssertWin(IsWindow(hwnd));
 		AssertWin(SetWindowText(hwnd, p_caption));
-		Log_Message(LOG_FORMAT_NORMAL, LOG_CHANGE_CAPTION, name, NULL);
+		Log_Message(LOG_FORMAT_NORMAL, LOG_CHANGE_CAPTION, name, nullptr);
 	}
 }
 
@@ -343,7 +343,7 @@ void Process_WindowOpacityChange (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	BYTE alpha;
 	LONG exstyle;
 	
-	percent = GetDlgItemInt(m_main, ID_EDIT_ALPHA, NULL, false);
+	percent = GetDlgItemInt(m_main, ID_EDIT_ALPHA, nullptr, false);
 	alpha = (BYTE)(((double)percent) / 100.0 * 255.0);
 	exstyle = GetWindowExStyle(hwnd);
 	
@@ -427,7 +427,7 @@ void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	if (err > 32) {
 		switch (GetDlgCtrlID(ctrl)) {
 			case ID_BUTTON_CMD: {
-				Log_Message(LOG_FORMAT_NORMAL, LOG_GET_COMMAND, name, NULL);
+				Log_Message(LOG_FORMAT_NORMAL, LOG_GET_COMMAND, name, nullptr);
 				break;
 			}
 			case ID_BUTTON_CAPTURE: {
@@ -459,9 +459,9 @@ void Process_OpenDirectory (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	*wcsrchr(path, '\\') = '\0';
 	CloseHandle(handle);
 	
-	err = (INT_PTR)ShellExecute(m_main, L"open", path, NULL, NULL, SW_SHOW);
+	err = (INT_PTR)ShellExecute(m_main, L"open", path, nullptr, nullptr, SW_SHOW);
 	if (err > 32) {
-		Log_Message(LOG_FORMAT_NORMAL, LOG_OPEN_DIRECTORY, name, NULL);
+		Log_Message(LOG_FORMAT_NORMAL, LOG_OPEN_DIRECTORY, name, nullptr);
 	} else {
 		Menu_InfoNotifyIcon(LOG_SE_FAILED, FormatSEError(err), 3000);
 	}
@@ -498,12 +498,12 @@ void Process_RuntimeChecker (HWND hwnd, HWND ctrl, LPCWSTR name) {
 
 void Process_ChangeHotkey (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	if (!DialogBox(m_hInstance, MAKEINTRESOURCE(ID_DLG_HOTKEY), m_main, HotkeyProc)) {
-		Log_Message(LOG_FORMAT_HOTKEY, LOG_CHANGE_HOTKEY, NULL, NULL);
+		Log_Message(LOG_FORMAT_HOTKEY, LOG_CHANGE_HOTKEY, nullptr, nullptr);
 	}
 }
 
 void Process_ChangeFilter (HWND hwnd, HWND ctrl, LPCWSTR name) {
 	if (!DialogBoxParam(m_hInstance, MAKEINTRESOURCE(ID_DLG_PROP), m_main, PropProc, TYPE_DLG_FILTER)) {
-		Log_Message(LOG_FORMAT_FILTER, LOG_CHANGE_FILTER, NULL, NULL);
+		Log_Message(LOG_FORMAT_FILTER, LOG_CHANGE_FILTER, nullptr, nullptr);
 	}
 }
