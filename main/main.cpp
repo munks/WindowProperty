@@ -12,21 +12,6 @@ HKEY m_regrec;
 
 static UINT WM_TASKBARCREATED = RegisterWindowMessage(L"TaskbarCreated");
 
-//External
-
-void Main_Close () {
-	DestroyMenu(me_menu);
-	DeleteObject(m_font);
-	RegCloseKey(m_regkey);
-	RegCloseKey(m_regset);
-	RegCloseKey(m_regrec);
-	Menu_RemoveNotifyIcon();
-	CoUninitialize();
-	Thread_Close();
-	FreeLibrary(c_comctlModule);
-	PostQuitMessage(0);
-}
-
 //Internal
 #define CreateButtonMacro(h, id, cb, x, y, cx, cy) Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, cb, x, y, cx, cy, ID_BUTTON_##id)
 
@@ -127,7 +112,6 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			[[fallthrough]];
 		}
 		WindowEvent(WM_SHOWWINDOW) [[fallthrough]];
-		WindowEvent(WM_TIMER) [[fallthrough]];
 		WindowEvent(WM_SETFOCUS) {
 			Control_RefreshListView();
 			break;
@@ -143,6 +127,8 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				DialogEvent(ID_BUTTON_OPEN)
 				DialogEvent(ID_BUTTON_MODULE)
 				DialogEvent(ID_BUTTON_RUNTIME)
+				DialogEvent(ID_BUTTON_STOP)
+				DialogEvent(ID_BUTTON_RESUME)
 				DialogEvent(ID_BUTTON_HOTKEY)
 				DialogEvent(ID_BUTTON_FILTER) {
 					if (EventMessage() == BN_CLICKED) {
@@ -172,6 +158,9 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 								executionFunc = Process_ChangeHotkey; absolute = true; break;
 							case ID_BUTTON_FILTER:
 								executionFunc = Process_ChangeFilter; absolute = true; break;
+							case ID_BUTTON_STOP:
+							case ID_BUTTON_RESUME:
+								executionFunc = Process_WindowMainThread; break;
 						}
 						if (absolute) {
 							executionFunc(nullptr, nullptr, nullptr);
@@ -240,7 +229,7 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			if (lParam == WM_LBUTTONUP) {
 				ShowWindow(m_main, SW_RESTORE);
 			}
-			if (lParam == WM_RBUTTONUP) {
+			else if (lParam == WM_RBUTTONUP) {
 				GetCursorPos(&cursor);
 				SetForegroundWindow(hwnd);
 				TrackPopupMenu(me_menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON, cursor.x, cursor.y, 0, hwnd, nullptr);
@@ -268,7 +257,7 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 				#endif
 				break;
 			}
-			if (wParam == HOTKEY_CURSOR) {
+			else if (wParam == HOTKEY_CURSOR) {
 				Hook_ClipCursor();
 				
 				#ifdef _DEBUG
@@ -278,25 +267,32 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			}
 			break;
 		}
+		WindowEvent(WM_CREATE) [[fallthrough]];
 		default: {
-			if (uMsg == WM_TASKBARCREATED) {
-				LSTATUS result;
-				HKEY hkey;
-
-				//Add System Tray Notify Icon
-				Menu_AddNotifyIcon();
-				Menu_MakeMenu();
-
-				//Get Registry (INIT)
-				result = RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, KEY_ALL_ACCESS, &hkey);
-				Menu_SetMenuState(TN_MENU_RT, result == ERROR_SUCCESS);
-				if (result == ERROR_SUCCESS) {
-					RegCloseKey(hkey);
-				}
-
-				//Init Task Scheduler COM And Get Task State
-				if (!Menu_TaskSchedulerInit()) { return 1; }
+			if (uMsg != WM_CREATE && uMsg != WM_TASKBARCREATED) {
+				break;
 			}
+			// CreateWindowEx sends WM_CREATE before it returns, so the global is not
+			// assigned yet on the first call. Shell_NotifyIcon requires this valid HWND.
+			m_main = hwnd;
+			LSTATUS result;
+			HKEY hkey;
+
+			//Add System Tray Notify Icon
+			if (!Menu_AddNotifyIcon()) {
+				break;
+			}
+			Menu_MakeMenu();
+
+			//Get Registry (INIT)
+			result = RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, KEY_ALL_ACCESS, &hkey);
+			Menu_SetMenuState(TN_MENU_RT, result == ERROR_SUCCESS);
+			if (result == ERROR_SUCCESS) {
+				RegCloseKey(hkey);
+			}
+
+			//Init Task Scheduler COM And Get Task State
+			if (!Menu_TaskSchedulerInit()) { return 1; }
 		}
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -378,7 +374,7 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	//Create Main Window
 	m_main = CreateWindowEx(WS_EX_TOPMOST, WINDOW_MAIN_NAME, WINDOW_MAIN_CAPTION,
 							WS_OVERLAPPED | WS_CAPTION | WS_POPUPWINDOW,
-							CW_USEDEFAULT, CW_USEDEFAULT, 600, 600,
+							CW_USEDEFAULT, CW_USEDEFAULT, 710, 335,
 							nullptr, nullptr, hInstance, nullptr);
 	Util_CheckError(m_main);
 	
@@ -398,49 +394,55 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	CreateButtonMacro(m_main, PROP, false, 475, 10, 100, 30);
 	
 	//Create Button (NAME)
-	CreateButtonMacro(m_main, NAME, false, 475, 50, 100, 30);
+	CreateButtonMacro(m_main, NAME, false, 585, 10, 100, 30);
 	
 	//Create Button (OPACITY)
-	CreateButtonMacro(m_main, OPACITY, false, 475, 90, 100, 30);
+	CreateButtonMacro(m_main, OPACITY, false, 475, 45, 100, 30);
 	
 	//Create Edit (OPACITY-ALPHA)
-	Control_CreateEdit(m_main, BUTTON_OPACITY_TOOLTIP, 475, 125, 27, 20, ID_EDIT_ALPHA, L"100");
+	Control_CreateEdit(m_main, BUTTON_OPACITY_TOOLTIP, 585, 50, 27, 20, ID_EDIT_ALPHA, L"100");
 	
 	//Create Static (OPACITY-PERCENTAGE)
-	Control_CreateStatic(m_main, 504, 126, 16, 20, ID_STATIC_PERCENTAGE, L"%");
+	Control_CreateStatic(m_main, 614, 51, 16, 20, ID_STATIC_PERCENTAGE, L"%");
 	
 	//Create Button (FULL SCREEN)
-	CreateButtonMacro(m_main, SCREEN, false, 475, 150, 100, 30);
+	CreateButtonMacro(m_main, SCREEN, false, 475, 80, 100, 30);
 	
 	//Create Button (Command Line)
-	CreateButtonMacro(m_main, CMD, false, 475, 190, 100, 30);
+	CreateButtonMacro(m_main, CMD, false, 585, 80, 100, 30);
 	
 	//Create Button (CAPTURE)
-	CreateButtonMacro(m_main, CAPTURE, false, 475, 230, 100, 30);
+	CreateButtonMacro(m_main, CAPTURE, false, 475, 115, 100, 30);
 	
 	//Create Button (OPEN)
-	CreateButtonMacro(m_main, OPEN, false, 475, 270, 100, 30);
+	CreateButtonMacro(m_main, OPEN, false, 585, 115, 100, 30);
 	
 	//Create Button (HOTKEY)
-	CreateButtonMacro(m_main, HOTKEY, false, 475, 310, 100, 30);
+	CreateButtonMacro(m_main, HOTKEY, false, 475, 150, 100, 30);
 	
 	//Create Button (FILTER)
-	CreateButtonMacro(m_main, FILTER, false, 475, 350, 100, 30);
+	CreateButtonMacro(m_main, FILTER, false, 585, 150, 100, 30);
 	
 	//Create Button (MODULE)
-	CreateButtonMacro(m_main, MODULE, false, 475, 390, 100, 30);
+	CreateButtonMacro(m_main, MODULE, false, 475, 185, 100, 30);
 	
 	//Create Button (MODULE)
-	CreateButtonMacro(m_main, RUNTIME, false, 475, 430, 100, 30);
+	CreateButtonMacro(m_main, RUNTIME, false, 585, 185, 100, 30);
 	
+	//Create Button (STOP)
+	CreateButtonMacro(m_main, STOP, false, 475, 220, 100, 30);
+	
+	//Create Button (RESUME)
+	CreateButtonMacro(m_main, RESUME, false, 585, 220, 100, 30);
+
 	//Create Button (MOVE)
-	CreateButtonMacro(m_main, MOVE, true, 475, 470, 100, 30);
-	
+	CreateButtonMacro(m_main, MOVE, true, 475, 255, 100, 30);
+
 	//Create Button (CLIP)
-	CreateButtonMacro(m_main, CLIP, true, 475, 510, 100, 30);
-	
+	CreateButtonMacro(m_main, CLIP, true, 585, 255, 100, 30);
+
 	//Create List-View
-	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 520, ID_LIST);
+	Control_CreateListView(m_main, LIST_TOOLTIP, 10, 10, 450, 270, ID_LIST);
 	Control_RefreshListView();
 	
 	//Get Registry (MOVE)
@@ -450,9 +452,6 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	//Get Registry (CLIP)
 	RegGetValue(m_regkey, nullptr, L"CursorActive", RRF_RT_REG_BINARY, nullptr, &regval, &(size = sizeof(BYTE)));
 	Hook_ClipHotkeyRegister(regval);
-
-	//SetTimer (Refresh List-View)
-	SetTimer(m_main, 1, 200, nullptr);
 
 	//Show Window (Main)
 	UpdateWindow(m_main);
@@ -468,5 +467,16 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+
+	DestroyMenu(me_menu);
+	DeleteObject(m_font);
+	RegCloseKey(m_regkey);
+	RegCloseKey(m_regset);
+	RegCloseKey(m_regrec);
+	Menu_RemoveNotifyIcon();
+	CoUninitialize();
+	Thread_Close();
+	FreeLibrary(c_comctlModule);
+
 	return 0;
 }

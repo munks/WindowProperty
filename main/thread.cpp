@@ -55,15 +55,18 @@ static LPPTDATA Thread_GetEmptyThread () {
 	return nullptr;
 }
 
-static void Thread_WriteResult (LPPTDATA data) {
+static void Thread_WriteResult (LPPTDATA data, bool forceEnded) {
 	char output[MAX_PATH];
 	DWORD cnt;
 	DWORD acctime = 0;
-	FILETIME start, end, ft[2];
+	FILETIME start, end, ft[2] = {};
 	SYSTEMTIME convert;
 	
 	GetProcessTimes(data->process, &start, &end, &ft[0], &ft[1]); //Data - Runtime
-	
+	if (forceEnded) {
+		GetSystemTimeAsFileTime(&end); //Force Ended - Get Current Time
+	}
+
 	sprintf_s(output, ARRAYSIZE(output), "%s(%s)\r\n", data->name, data->winname);
 	WriteFile(t_file, output, (DWORD)strlen(output), &cnt, nullptr); //Write - Path
 	
@@ -94,11 +97,23 @@ static void Thread_WriteResult (LPPTDATA data) {
 
 static DWORD Thread_Run (LPVOID lpptdata) {
 	LPPTDATA data = (LPPTDATA)lpptdata;
-	
+	HANDLE handles[2] = {data->endEvt, nullptr};
+	DWORD result;
+
 	while (true) {
-		WaitForSingleObject(data->event, INFINITE);
-		WaitForSingleObject(data->process, INFINITE);
-		Thread_WriteResult(data);
+		handles[1] = data->event;
+		result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+		if (result != 1) { break; }
+
+		handles[1] = data->process;
+		result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+		if (result == WAIT_FAILED) {
+			break;
+		}
+
+		Thread_WriteResult(data, result != 1);
+		if (result != 1) { break; }
+
 		CloseHandle(data->process);
 		data->process = nullptr;
 		data->pid = 0;
@@ -147,10 +162,12 @@ void Thread_CreateThread (HWND hwnd, LPCWSTR name) {
 		}
 		ZeroMemory(temp, sizeof(PTDATA));
 		temp->event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		temp->endEvt = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		temp->thread = CreateThread(nullptr, 0, Thread_Run, temp, 0, nullptr);
-		if (!temp->event || !temp->thread) {
+		if (!temp->event || !temp->thread || !temp->endEvt) {
 			if (temp->thread) { CloseHandle(temp->thread); }
 			if (temp->event) { CloseHandle(temp->event); }
+			if (temp->endEvt) { CloseHandle(temp->endEvt); }
 			CloseHandle(process);
 			free(temp);
 			Util_PrintWindowsLastError();
@@ -216,10 +233,12 @@ void Thread_CreateThreadProcess (LPCWSTR filepath) {
 		}
 		ZeroMemory(temp, sizeof(PTDATA));
 		temp->event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		temp->endEvt = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		temp->thread = CreateThread(nullptr, 0, Thread_Run, temp, 0, nullptr);
-		if (!temp->event || !temp->thread) {
+		if (!temp->event || !temp->thread || !temp->endEvt) {
 			if (temp->thread) { CloseHandle(temp->thread); }
 			if (temp->event) { CloseHandle(temp->event); }
+			if (temp->endEvt) { CloseHandle(temp->endEvt); }	
 			CloseHandle(pi.hProcess);
 			free(temp);
 			Util_PrintWindowsLastError();
@@ -248,10 +267,12 @@ void Thread_Init () {
 	if (!t_chainstart) { return; }
 	ZeroMemory(t_chainstart, sizeof(PTDATA));
 	t_chainstart->event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	t_chainstart->endEvt = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	t_chainstart->thread = CreateThread(nullptr, 0, Thread_Run, t_chainstart, 0, nullptr);
-	if (!t_chainstart->event || !t_chainstart->thread) {
+	if (!t_chainstart->event || !t_chainstart->thread || !t_chainstart->endEvt) {
 		if (t_chainstart->thread) { CloseHandle(t_chainstart->thread); }
 		if (t_chainstart->event) { CloseHandle(t_chainstart->event); }
+		if (t_chainstart->endEvt) { CloseHandle(t_chainstart->endEvt); }
 		free(t_chainstart);
 		t_chainstart = nullptr;
 		Util_PrintWindowsLastError();
@@ -266,10 +287,18 @@ void Thread_Close () {
 	
 	do {
 		t_chainstart = data->next;
-		if (data->thread) { TerminateThread(data->thread, 0); CloseHandle(data->thread); }
-		if (data->process) { CloseHandle(data->process); }
+		if (data->event) { SetEvent(data->event); }
+		if (data->endEvt) { SetEvent(data->endEvt); }
+
+		if (data->thread) { WaitForSingleObject(data->thread, INFINITE); }
+
 		if (data->event) { CloseHandle(data->event); }
+		if (data->endEvt) { CloseHandle(data->endEvt); }
+		if (data->thread) { CloseHandle(data->thread); }
+		if (data->process) { CloseHandle(data->process); }
+
 		free(data);
+
 		data = t_chainstart;
 	} while (data);
 	

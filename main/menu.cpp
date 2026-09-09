@@ -171,7 +171,7 @@ void Menu_ExecuteNotifyEvent (WORD message) {
 	
 	switch (message) {
 		case TN_MENU_CLOSE: {
-			Main_Close();
+			PostQuitMessage(0);
 			return;
 		}
 		case TN_MENU_LOG: {
@@ -213,7 +213,7 @@ void Menu_ExecuteNotifyEvent (WORD message) {
 	}
 }
 
-void Menu_AddNotifyIcon () {
+BOOL Menu_AddNotifyIcon () {
 	me_nid.cbSize = sizeof(NOTIFYICONDATA);
 	me_nid.hWnd = m_main;
 	me_nid.uID = 0;
@@ -222,7 +222,7 @@ void Menu_AddNotifyIcon () {
 	wcscpy_s(me_nid.szTip, ARRAYSIZE(me_nid.szTip), WINDOW_MAIN_CAPTION);
 	me_nid.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 	
-	Util_CheckError(Shell_NotifyIcon(NIM_ADD, &me_nid));
+	return Shell_NotifyIcon(NIM_ADD, &me_nid);
 }
 
 void Menu_RemoveNotifyIcon () {
@@ -233,7 +233,7 @@ void Menu_RemoveNotifyIcon () {
 
 void Menu_InfoNotifyIcon (LPCWSTR title, LPCWSTR info, int len) {
 	//Log
-	Log_Message(LOG_FORMAT_NORMAL, title, info, nullptr);
+	Log_Message(LOG_FORMAT_NORMAL, title, info);
 	
 	//Init
 	me_nid.uFlags = NIF_INFO;

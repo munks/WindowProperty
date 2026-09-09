@@ -23,7 +23,7 @@ void List_RemoveText () {
 	Edit_SetText(li_edit, L"");
 }
 
-LRESULT CALLBACK ListProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK ListProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_SYSCOMMAND) {
 			if (wParam == SC_CLOSE) {

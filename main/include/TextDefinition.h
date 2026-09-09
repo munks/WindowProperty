@@ -69,6 +69,14 @@
 #define BUTTON_RUNTIME_CAPTION		L"Check Runtime"
 #define BUTTON_RUNTIME_TOOLTIP		L"When Process Terminated, Record Start Time, End Time, Runtime"
 
+//ID_BUTTON_STOP
+#define BUTTON_STOP_CAPTION			L"Pause Window"
+#define BUTTON_STOP_TOOLTIP			L"Pause Window Activity"
+
+//ID_BUTTON_RESUME
+#define BUTTON_RESUME_CAPTION		L"Resume Window"
+#define BUTTON_RESUME_TOOLTIP		L"Resume Window Activity"
+
 //ID_LIST
 #define LIST_TOOLTIP				L"List Of Processes"
 
@@ -119,6 +127,8 @@
 #define LOG_CHANGE_CAPTURE			L"Window Capture State Change"
 #define LOG_SE_FAILED				L"Program Run Failed"
 #define LOG_OPEN_DIRECTORY			L"Open Directory"
+#define LOG_STOP_SCREEN				L"Window Activity Pause"
+#define LOG_RESUME_SCREEN			L"Window Activity Resume"
 
 //Dialog
 #define DLG_PROP_TITLE				L"Properties"

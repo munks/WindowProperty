@@ -1,43 +1,81 @@
 # WindowProperty
-Window Property Adjustment Tool
 
-## Usage
-Common
-1. Select Window in list.
-2. Push button.
+Windows 창과 해당 프로세스를 선택해 창 속성, 표시 방식, 입력 동작을 조정하는 Win32 데스크톱 도구입니다. 창 목록에서 대상을 선택한 뒤 오른쪽의 기능을 실행합니다.
 
-Set Opacity
-1. Select Window in list.
-2. Write opacity percent.
-3. Push button.
+## 주요 기능
 
-Check Box
-- Show All
-    - Checked: Show all windows include hidden.
-- Move Active
-    - Checked: Can drag and move anywhere in the window. (Hotkey(Default:F3) to active)
-- Clip Cursor
-    - Checked: Cursor bind in the window. (Hotkey(Default:F4) to active)
+### 창 목록
 
-## Effect
+실행 중인 창을 프로세스 이름, 창 제목, PID, HWND와 함께 표시합니다. 선택한 창을 기준으로 대부분의 기능이 동작하며, 목록은 창을 다시 표시하거나 포커스를 얻을 때 새로 고쳐집니다.
 
-### Properties
-- Change the window's styles.
-### Change Name
-- Change the window title.
-### Set Opacity
-- Change the window opacity. (0~100)
-### Full Screen
-- Set the window to full screen. (borderless window)
-### Command Line
-- Get process command line. (dllinjector needed)
-### Include/Exclude Capture
-- Include/Exclude window from capture screen. (dllinjector needed)
-### Open Folder
-- Open executable file directory
-### Change Hotkey
-- Change hotkey of Clip Cursor/Move Active.
+### 창 조작
 
-## Caution
+| 기능 | 동작 |
+| --- | --- |
+| 속성 | 창 스타일과 확장 스타일을 변경합니다. |
+| 이름 변경 | 창 제목을 변경합니다. |
+| 불투명도 변경 | 0~100% 범위로 창 투명도를 설정합니다. |
+| 전체 화면 | 창을 전체 화면 모드와 일반 창 모드 사이에서 전환합니다. |
+| 폴더 열기 | 대상 프로세스 실행 파일이 있는 폴더를 엽니다. |
+| 모듈 확인 | 대상 프로세스에 로드된 모듈 목록을 표시합니다. |
+| 창 일시 정지 | 대상 창의 UI 스레드를 일시 정지합니다. |
+| 창 활동 재개 | 일시 정지한 대상 창의 UI 스레드를 재개합니다. |
 
-dllinjector used datamining techniques. We are not responsible for any legal issues.
+`창 일시 정지`와 `창 활동 재개`는 프로세스 전체가 아니라 선택한 창에 연결된 스레드를 대상으로 합니다. 접근 권한이 없는 프로세스나 시스템 프로세스에는 적용되지 않을 수 있습니다.
+
+### 단축키와 마우스 기능
+
+| 기능 | 기본 단축키 | 동작 |
+| --- | --- | --- |
+| 이동 활성화 | F3 | 활성화한 뒤 창 내부를 드래그하면 대상 창을 이동합니다. |
+| 커서 가두기 | F4 | 활성 창의 영역 밖으로 마우스 커서가 나가지 않도록 제한합니다. |
+
+`단축키 변경`에서 두 단축키를 변경할 수 있습니다. 기능을 켜거나 끄는 상태와 단축키는 사용자 레지스트리에 저장됩니다.
+
+### 런타임 기록
+
+`런타임 체크`는 선택한 프로세스가 종료될 때 시작 시간, 종료 시간, 실행 시간과 누적 시간을 기록합니다. 기록 파일은 프로그램의 현재 작업 폴더 아래 `record` 폴더에 생성됩니다.
+
+같은 PID는 동시에 중복 감시하지 않습니다. 프로그램이 종료되는 동안 아직 감시 중인 프로세스는 종료 시점까지의 실행 시간을 기록한 뒤 감시를 끝냅니다.
+
+### 트레이 메뉴와 로그
+
+창을 닫으면 프로그램을 종료하지 않고 트레이로 숨깁니다.
+
+- 트레이 아이콘 왼쪽 클릭: 주 창 표시
+- 트레이 아이콘 오른쪽 클릭: 이동 활성화, 커서 가두기, 시작 프로그램 등록, 런타임 컨텍스트 메뉴, 로그, 종료 메뉴 표시
+
+`로그` 창에서는 창 조작, 실행 실패, 단축키 변경 같은 작업 기록을 확인할 수 있습니다.
+
+### 추가 기능
+
+- **검색 필터 변경**: 창 목록에 포함하거나 제외할 창 스타일과 확장 스타일 조건을 설정합니다.
+- **시작 프로그램에 추가**: Windows 시작 시 프로그램을 실행하도록 작업 스케줄러에 등록합니다.
+- **컨텍스트 메뉴에 런타임 체크 추가**: `.exe` 파일의 탐색기 컨텍스트 메뉴에서 런타임 감시를 시작할 수 있도록 등록합니다.
+- **커맨드 라인**: 대상 프로세스의 명령줄 정보를 확인합니다.
+- **캡쳐 포함/제외**: 대상 창이 화면 캡처에 포함될지 여부를 전환합니다.
+
+커맨드 라인 확인과 캡처 포함/제외에는 보조 실행 파일과 DLL 주입 구성 요소가 필요합니다.
+
+## 사용 방법
+
+1. 목록에서 조작할 창을 선택합니다.
+2. 필요한 기능 버튼을 누릅니다.
+3. 불투명도 변경은 값을 입력한 뒤 실행합니다.
+4. 속성, 검색 필터, 단축키 변경은 열리는 대화 상자에서 설정을 확인합니다.
+
+## 빌드
+
+솔루션은 Visual Studio용 C++ 프로젝트로 구성되어 있습니다.
+
+1. `WindowProperty.sln`을 Visual Studio에서 엽니다.
+2. 대상 플랫폼(`x64` 또는 `x86`)과 구성(Debug 또는 Release)을 선택합니다.
+3. 솔루션을 빌드합니다.
+
+`main`은 주 프로그램이며, `dllinjector`와 `dll`은 명령줄 및 캡처 관련 기능에 사용됩니다. 해당 기능을 사용하려면 같은 플랫폼으로 관련 프로젝트도 빌드해야 합니다.
+
+## 주의 사항
+
+- 다른 사용자, 관리자 권한, 보호된 시스템 프로세스의 창은 일부 기능이 실패할 수 있습니다.
+- 창 스타일, 전체 화면, 스레드 일시 정지는 대상 프로그램의 동작이나 표시 상태에 영향을 줄 수 있습니다.
+- DLL 주입 기능은 보안 제품이나 대상 프로그램의 정책에 의해 차단될 수 있습니다. 사용 전 대상 프로그램의 정책과 환경을 확인하세요.

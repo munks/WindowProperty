@@ -1,3 +1,26 @@
-# Github Copilot
-.vs/CopilotSnapshots/
-.vs/WindowProperty/copilot-chat/
+# Visual Studio user and workspace state
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+*.ipch
+
+# Build output and intermediate files
+[Bb]in/
+[Dd]ebug/
+[Rr]elease/
+[Xx]64/
+[Xx]86/
+*.obj
+*.pdb
+*.idb
+*.iobj
+*.ipdb
+*.tlog
+*.log
+*.exe
+*.dll
+*.lib
+*.exp
+*.recipe

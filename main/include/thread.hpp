@@ -10,6 +10,7 @@ typedef struct PTDATA {
 	HANDLE thread;
 	HANDLE process;
 	HANDLE event;
+	HANDLE endEvt;
 	LPPTDATA next;
 } PTDATA, *LPPTDATA;
 

@@ -10,6 +10,7 @@ void Process_OpenDirectory (HWND, HWND, LPCWSTR);
 void Process_RuntimeChecker (HWND, HWND, LPCWSTR);
 void Process_ChangeHotkey (HWND, HWND, LPCWSTR);
 void Process_ChangeFilter (HWND, HWND, LPCWSTR);
+void Process_WindowMainThread (HWND, HWND, LPCWSTR);
 
-#define TYPE_DLG_PROP 1
-#define TYPE_DLG_FILTER 2
+constexpr DWORD TYPE_DLG_PROP = 1;
+constexpr DWORD TYPE_DLG_FILTER = 2;

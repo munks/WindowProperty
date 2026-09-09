@@ -7,14 +7,14 @@ HWND l_logmsg;
 
 //Internal
 
-void AddTextToLogEdit (LPCWSTR message) {
+static void AddTextToLogEdit (LPCWSTR message) {
 	int lastPos = Edit_GetTextLength(l_logmsg);
 	
 	Edit_SetSel(l_logmsg, lastPos, lastPos);
 	Edit_ReplaceSel(l_logmsg, message);
 }
 
-LRESULT CALLBACK LogProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK LogProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	WindowEventCase(uMsg) {
 		WindowEvent(WM_SYSCOMMAND) {
 			if (wParam == SC_CLOSE) {

@@ -69,6 +69,14 @@
 #define BUTTON_RUNTIME_CAPTION		L"런타임 체크"
 #define BUTTON_RUNTIME_TOOLTIP		L"프로세스 종료 시 시작 시간, 종료 시간, 가동 시간을 기록합니다"
 
+//ID_BUTTON_STOP
+#define BUTTON_STOP_CAPTION			L"창 일시 정지"
+#define BUTTON_STOP_TOOLTIP			L"창의 활동을 일시 정지합니다"
+
+//ID_BUTTON_RESUME
+#define BUTTON_RESUME_CAPTION		L"창 활동 재개"
+#define BUTTON_RESUME_TOOLTIP		L"창의 활동을 재개합니다"
+
 //ID_LIST
 #define LIST_TOOLTIP				L"프로세스 목록"
 
@@ -119,6 +127,8 @@
 #define LOG_CHANGE_CAPTURE			L"창 캡쳐 상태 변경"
 #define LOG_SE_FAILED				L"프로그램 실행 실패"
 #define LOG_OPEN_DIRECTORY			L"디렉토리 열기"
+#define LOG_STOP_SCREEN				L"창 일시 정지"
+#define LOG_RESUME_SCREEN			L"창 활동 재개"
 
 //Dialog
 #define DLG_PROP_TITLE				L"속성"

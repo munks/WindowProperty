@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <windows.h>
+#include <format>
 
+void ErrorMsg (LPCWSTR msg) {
+	MessageBox(nullptr, std::format(L"{} Error\n-Error: {:x}", msg, GetLastError()).c_str(), L"Error", MB_OK | MB_ICONERROR);
+}
 void AttachDLL (HANDLE process, const wchar_t* dll) {
 	LPVOID alloc;
 	HANDLE thread;
@@ -12,19 +16,19 @@ void AttachDLL (HANDLE process, const wchar_t* dll) {
 	//Allocate/Write Memory
 	alloc = VirtualAllocEx(process, nullptr, sizeof(wchar_t) * len, MEM_COMMIT, PAGE_READWRITE);
 	if (!alloc) {
-		puts("VirtualAllocEx Error");
+		ErrorMsg(L"VirtualAllocEx");
 		return;
 	}
 	
 	if (!WriteProcessMemory(process, alloc, dll, sizeof(wchar_t) * len, nullptr)) {
-		puts("WriteProcessMemory Error");
+		ErrorMsg(L"WriteProcessMemory");
 		goto THREADCLOSE;
 	}
 	
 	//Run Thread
 	thread = CreateRemoteThread(process, nullptr, 0, (LPTHREAD_START_ROUTINE)LoadLibraryW, alloc, 0, nullptr);
 	if (!thread) {
-		puts("CreateRemoteThread Error");
+		ErrorMsg(L"CreateRemoteThread");
 		goto THREADCLOSE;
 	}
 	
@@ -41,14 +45,15 @@ void ProcessCommandLine (ULONG pid, const wchar_t* dll) {
 	FILE* file;
 	
 	//OpenProcess
-	process = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, false, pid);
+	process = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, false, pid);
 	if (!process) {
-		puts("OpenProcess Error");
+		ErrorMsg(L"OpenProcess");
 		return;
 	}
 	
 	//DLL Check
 	if (_wfopen_s(&file, dll, L"r") != 0) {
+		ErrorMsg(L"Failed to open DLL file");
 		goto FREEPROC;
 	}
 	fclose(file);

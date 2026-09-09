@@ -6,11 +6,11 @@ bool CheckErrorFunc(T checkVar, LPCSTR file, int line, LPCSTR targetValName) {
 	if (checkVar == NULL) {
 		std::string errmsg = std::format(
 			"Window Processing Error\n"
-			"On File - {}, In Line - {}\n"
-			"Variable Name - {}, Error Code - {}",
+			"On File - {}\nIn Line - {}\n"
+			"Variable Name - {}\nError Code - {:#x}",
 			file, line, targetValName, GetLastError());
 		MessageBoxA(nullptr, errmsg.c_str(), "Error", MB_OK | MB_ICONERROR);
-		Main_Close();
+		PostQuitMessage(0);
 	}
 
 	return true;
