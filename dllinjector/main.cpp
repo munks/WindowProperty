@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <windows.h>
-#include <format>
 
 void ErrorMsg (LPCWSTR msg) {
-	MessageBox(nullptr, std::format(L"{} Error\n-Error: {:x}", msg, GetLastError()).c_str(), L"Error", MB_OK | MB_ICONERROR);
+	wchar_t output[256];
+	DWORD error = GetLastError();
+
+	swprintf_s(output, ARRAYSIZE(output), L"%ls Error\n-Error: %lx", msg, error);
+	MessageBox(nullptr, output, L"Error", MB_OK | MB_ICONERROR);
 }
 void AttachDLL (HANDLE process, const wchar_t* dll) {
 	LPVOID alloc;

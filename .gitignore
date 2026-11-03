@@ -7,7 +7,6 @@
 *.ipch
 
 # Build output and intermediate files
-[Bb]in/
 [Dd]ebug/
 [Rr]elease/
 [Xx]64/
@@ -19,8 +18,6 @@
 *.ipdb
 *.tlog
 *.log
-*.exe
-*.dll
 *.lib
 *.exp
 *.recipe
