@@ -11,6 +11,10 @@ HKEY m_regset;
 HKEY m_regrec;
 
 static UINT WM_TASKBARCREATED = RegisterWindowMessage(L"TaskbarCreated");
+static constexpr UINT_PTR TRAY_RETRY_TIMER = 2;
+static constexpr UINT TRAY_RETRY_INTERVAL_MS = 1000;
+static constexpr UINT TRAY_RETRY_MAX_ATTEMPTS = 30;
+static UINT m_trayRetryAttempts;
 
 //Internal
 #define CreateButtonMacro(h, id, cb, x, y, cx, cy) Control_CreateButton(h, BUTTON_##id##_CAPTION, BUTTON_##id##_TOOLTIP, cb, x, y, cx, cy, ID_BUTTON_##id)
@@ -54,6 +58,41 @@ static void Main_VersionCheck (DWORD ver) {
 	RegSetValueEx(m_regkey, L"Version", 0, REG_DWORD, (BYTE*)&ver, sizeof(DWORD));
 }
 
+// Window-management calls can synchronously wait for the target window procedure.
+// Keep that wait bounded, without changing the target process or its threads.
+static bool Main_IsWindowResponsive (HWND hwnd) {
+	DWORD_PTR result;
+
+	return SendMessageTimeout(hwnd, WM_NULL, 0, 0, SMTO_ABORTIFHUNG,
+			500, &result) != 0;
+}
+
+// Explorer can still be creating its notification area when a logon task runs.
+// Retry NIM_ADD for a bounded period, and use the same path after Explorer restarts.
+static void Main_StartTrayIconRegistration (HWND hwnd) {
+	KillTimer(hwnd, TRAY_RETRY_TIMER);
+	m_trayRetryAttempts = 0;
+
+	if (Menu_AddNotifyIcon()) {
+		return;
+	}
+
+	OutputDebugString(L"WindowProperty: Shell_NotifyIcon(NIM_ADD) failed; retrying.\n");
+	SetTimer(hwnd, TRAY_RETRY_TIMER, TRAY_RETRY_INTERVAL_MS, nullptr);
+}
+
+static void Main_RetryTrayIconRegistration (HWND hwnd) {
+	if (Menu_AddNotifyIcon()) {
+		KillTimer(hwnd, TRAY_RETRY_TIMER);
+		return;
+	}
+
+	if (++m_trayRetryAttempts >= TRAY_RETRY_MAX_ATTEMPTS) {
+		KillTimer(hwnd, TRAY_RETRY_TIMER);
+		OutputDebugString(L"WindowProperty: notification area was unavailable after tray-icon retries.\n");
+	}
+}
+
 static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	HWND tmphwnd;
 	wchar_t pidhwnd[10]		= {0};
@@ -68,8 +107,21 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	#ifdef _DEBUG
 	Debug_ConvertWindowMessage(uMsg);
 	#endif
+
+	if (uMsg == WM_TASKBARCREATED) {
+		// Explorer discarded all notification icons while it restarted.
+		Main_StartTrayIconRegistration(hwnd);
+		return 0;
+	}
 	
 	WindowEventCase(uMsg) {
+		WindowEvent(WM_TIMER) {
+			if (wParam == TRAY_RETRY_TIMER) {
+				Main_RetryTrayIconRegistration(hwnd);
+				return 0;
+			}
+			break;
+		}
 		WindowEvent(WM_NOTIFY) {
 			NotifyEventCase(ListViewMessage()) {
 				NotifyEvent(HDN_BEGINTRACK)
@@ -135,16 +187,17 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 						//Change Window Property
 						void (*executionFunc)(HWND, HWND, LPCWSTR) = nullptr;
 						bool absolute = false;
+						bool requiresResponsiveWindow = false;
 						
 						switch (EventDialog()) {
 							case ID_BUTTON_PROP:
-								executionFunc = Process_WindowPropChange; break;
+								executionFunc = Process_WindowPropChange; requiresResponsiveWindow = true; break;
 							case ID_BUTTON_NAME:
-								executionFunc = Process_WindowCaptionChange; break;
+								executionFunc = Process_WindowCaptionChange; requiresResponsiveWindow = true; break;
 							case ID_BUTTON_OPACITY:
-								executionFunc = Process_WindowOpacityChange; break;
+								executionFunc = Process_WindowOpacityChange; requiresResponsiveWindow = true; break;
 							case ID_BUTTON_SCREEN:
-								executionFunc = Process_WindowFullScreenChange; break;
+								executionFunc = Process_WindowFullScreenChange; requiresResponsiveWindow = true; break;
 							case ID_BUTTON_CMD:
 							case ID_BUTTON_CAPTURE:
 								executionFunc = Process_WindowsDLLHook; break;
@@ -175,8 +228,9 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 							ListView_GetItemText(GetDlgItem(hwnd, ID_LIST), c_listViewIndex, 3, pidhwnd, 10);
 							pidhwnd[9] = L'\0';
 
-							if (IsWindow((HWND)(UINT_PTR)_wtoi(pidhwnd)) && !IsHungAppWindow((HWND)(UINT_PTR)_wtoi(pidhwnd))) {
-								executionFunc((HWND)(UINT_PTR)_wtoi(pidhwnd), (HWND)lParam, name);
+							HWND targetHwnd = (HWND)(UINT_PTR)_wtoi(pidhwnd);
+							if (IsWindow(targetHwnd) && (!requiresResponsiveWindow || Main_IsWindowResponsive(targetHwnd))) {
+								executionFunc(targetHwnd, (HWND)lParam, name);
 							} else {
 								Menu_InfoNotifyIcon(name, LOG_NO_OR_NR_WINDOW, 3000);
 							}
@@ -267,22 +321,15 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			}
 			break;
 		}
-		WindowEvent(WM_CREATE) [[fallthrough]];
-		default: {
-			if (uMsg != WM_CREATE && uMsg != WM_TASKBARCREATED) {
-				break;
-			}
+		WindowEvent(WM_CREATE) {
 			// CreateWindowEx sends WM_CREATE before it returns, so the global is not
 			// assigned yet on the first call. Shell_NotifyIcon requires this valid HWND.
 			m_main = hwnd;
 			LSTATUS result;
 			HKEY hkey;
 
-			//Add System Tray Notify Icon
-			if (!Menu_AddNotifyIcon()) {
-				break;
-			}
 			Menu_MakeMenu();
+			Main_StartTrayIconRegistration(hwnd);
 
 			//Get Registry (INIT)
 			result = RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Classes\\exefile\\shell\\WindowPropertyRTChecker", 0, KEY_ALL_ACCESS, &hkey);
@@ -292,7 +339,10 @@ static LRESULT CALLBACK MainProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			}
 
 			//Init Task Scheduler COM And Get Task State
-			if (!Menu_TaskSchedulerInit()) { return 1; }
+			if (!Menu_TaskSchedulerInit()) {
+				OutputDebugString(L"WindowProperty: Task Scheduler initialization failed.\n");
+			}
+			return 0;
 		}
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -468,6 +518,7 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 		DispatchMessage(&msg);
 	}
 
+	KillTimer(m_main, TRAY_RETRY_TIMER);
 	DestroyMenu(me_menu);
 	DeleteObject(m_font);
 	RegCloseKey(m_regkey);

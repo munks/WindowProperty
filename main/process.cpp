@@ -357,31 +357,33 @@ void Process_WindowOpacityChange (HWND hwnd, HWND, LPCWSTR name) {
 }
 
 void Process_WindowFullScreenChange (HWND hwnd, HWND, LPCWSTR name) {
-	LONG style;
-	int screenX, screenY;
-	bool isMaximized;
+	MONITORINFO mi = { 0 };
+	LONG_PTR style;
+
+	mi.cbSize = sizeof(MONITORINFO);
+	GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi);
 	
-	screenX = GetSystemMetrics(SM_CXSCREEN);
-	screenY = GetSystemMetrics(SM_CYSCREEN);
-	isMaximized = IsMaximized(hwnd);
-	
-	if (isMaximized) {
-		style = GetWindowStyle(hwnd) | WS_OVERLAPPEDWINDOW;
-	} else {
-		style = (GetWindowStyle(hwnd) & ~(WS_OVERLAPPEDWINDOW | WS_DLGFRAME)) | WS_POPUP;
-	}
-	
-	SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW);
-	SetWindowLong(hwnd, GWL_STYLE, style);
-	ShowWindow(hwnd, isMaximized ? SW_RESTORE : SW_MAXIMIZE);
-	
-	if (!isMaximized) {
-		SetWindowPos(hwnd, HWND_TOP, 0, 0, screenX, screenY, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
-	} else {
-		SetWindowRenew(hwnd);
-	}
-	
-	Log_Message(LOG_FORMAT_EXTRA, LOG_CHANGE_SCREEN, name, isMaximized ? LOG_CHANGE_SCREEN_WINDOW : LOG_CHANGE_SCREEN_FULL);
+	ShowWindow(hwnd, SW_RESTORE);
+
+	style = GetWindowLongPtr(hwnd, GWL_STYLE);
+	style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
+	style |= WS_POPUP | WS_VISIBLE;
+
+	SetWindowLongPtr(hwnd, GWL_STYLE, style);
+	SetWindowPos(
+		hwnd,
+		nullptr,
+		mi.rcMonitor.left,
+		mi.rcMonitor.top,
+		mi.rcMonitor.right - mi.rcMonitor.left,
+		mi.rcMonitor.bottom - mi.rcMonitor.top,
+		SWP_NOACTIVATE |
+		SWP_NOOWNERZORDER |
+		SWP_NOZORDER |
+		SWP_FRAMECHANGED
+	);
+
+	Log_Message(LOG_FORMAT_EXTRA, LOG_CHANGE_SCREEN, name, LOG_CHANGE_SCREEN_FULL);
 }
 
 void Process_WindowsDLLHook (HWND hwnd, HWND ctrl, LPCWSTR name) {

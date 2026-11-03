@@ -222,7 +222,14 @@ BOOL Menu_AddNotifyIcon () {
 	wcscpy_s(me_nid.szTip, ARRAYSIZE(me_nid.szTip), WINDOW_MAIN_CAPTION);
 	me_nid.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(ID_ICON));
 	
-	return Shell_NotifyIcon(NIM_ADD, &me_nid);
+	if (!Shell_NotifyIcon(NIM_ADD, &me_nid)) {
+		return FALSE;
+	}
+
+	// Use the current notification-area protocol after the icon has been added.
+	me_nid.uVersion = NOTIFYICON_VERSION_4;
+	Shell_NotifyIcon(NIM_SETVERSION, &me_nid);
+	return TRUE;
 }
 
 void Menu_RemoveNotifyIcon () {
