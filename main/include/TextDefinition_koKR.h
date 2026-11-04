@@ -100,6 +100,21 @@
 #define MENU_RUNTIME_TEXT			L"컨텍스트 메뉴에 런타임 체크 추가 (.exe)"
 #define MENU_LOG_TEXT				L"로그"
 #define MENU_CLOSE_TEXT				L"닫기"
+#define MENU_DISCORD_TEXT           L"Discord 활동 설정..."
+
+// Discord activity
+#define DISCORD_TITLE               L"Discord 활동 설정"
+#define DISCORD_ENABLED_TEXT        L"Discord 활동 상태 표시"
+#define DISCORD_NAME_LABEL          L"표시 이름 (비우면 Discord 앱 이름 사용)"
+#define DISCORD_DETAILS_LABEL       L"활동 내용 (UTF-8 최대 128바이트)"
+#define DISCORD_SECONDS_LABEL       L"경과 시간(초, 10초마다 갱신, 비우면 자동)"
+#define DISCORD_SECONDS_ERROR       L"0부터 315360000까지의 정수(초)를 입력하세요."
+#define DISCORD_CONFIRM             L"확인"
+#define DISCORD_CANCEL              L"취소"
+#define DISCORD_ERROR_TITLE         L"Discord"
+#define DISCORD_LENGTH_ERROR        L"각 항목은 UTF-8 기준 128바이트를 넘을 수 없습니다."
+#define DISCORD_SAVE_ERROR          L"Discord 설정을 저장하지 못했습니다."
+#define DISCORD_DEFAULT_DETAILS     L"창 관리 중"
 
 //Link
 #define LINK_STYLE					L"https://learn.microsoft.com/ko-kr/windows/win32/winmsg/window-styles"

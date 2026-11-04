@@ -1,4 +1,5 @@
-#include "global.hpp"
+﻿#include "global.hpp"
+#include "discord_presence.hpp"
 
 //Variable
 
@@ -170,6 +171,10 @@ void Menu_ExecuteNotifyEvent (WORD message) {
 	BOOL changed;
 	
 	switch (message) {
+		case TN_MENU_DISCORD: {
+			DiscordPresence_ShowSettings();
+			break;
+		}
 		case TN_MENU_CLOSE: {
 			PostQuitMessage(0);
 			return;
@@ -266,6 +271,7 @@ void Menu_MakeMenu () {
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_CLIP), MENU_CLIP_TEXT);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_INIT), MENU_START_TEXT);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_RT), MENU_RUNTIME_TEXT);
+	AppendMenu(me_menu, MF_STRING, MAKELONG(ID_BUTTON_ICON, TN_MENU_DISCORD), MENU_DISCORD_TEXT);
 	AppendMenu(me_menu, MF_SEPARATOR, 0, nullptr);
 	AppendMenu(me_menu, MF_STRING | MF_UNCHECKED, MAKELONG(ID_BUTTON_ICON, TN_MENU_LOG), MENU_LOG_TEXT);
 	AppendMenu(me_menu, MF_SEPARATOR, 0, nullptr);

@@ -1,4 +1,5 @@
 #include "global.hpp"
+#include "discord_presence.hpp"
 
 //Variable
 
@@ -511,6 +512,8 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	
 	LocalFree(cmdArgs);
 	
+	DiscordPresence_Initialize();
+
 	//Message Loop
 	MSG msg = {};
 	while (GetMessage(&msg, nullptr, 0, 0) > 0) {
@@ -518,6 +521,7 @@ int WINAPI wWinMain (_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 		DispatchMessage(&msg);
 	}
 
+	DiscordPresence_Stop();
 	KillTimer(m_main, TRAY_RETRY_TIMER);
 	DestroyMenu(me_menu);
 	DeleteObject(m_font);

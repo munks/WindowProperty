@@ -20,6 +20,9 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\discord_presence.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="include\control.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -73,6 +76,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="discord_presence.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="control.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>

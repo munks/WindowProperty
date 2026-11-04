@@ -100,6 +100,21 @@
 #define MENU_RUNTIME_TEXT			L"Add Check Runtime On Context Menu (.exe)"
 #define MENU_LOG_TEXT				L"Log"
 #define MENU_CLOSE_TEXT				L"Close"
+#define MENU_DISCORD_TEXT           L"Discord activity settings..."
+
+// Discord activity
+#define DISCORD_TITLE               L"Discord activity settings"
+#define DISCORD_ENABLED_TEXT        L"Show Discord activity"
+#define DISCORD_NAME_LABEL          L"Display name (blank uses Discord app name)"
+#define DISCORD_DETAILS_LABEL       L"Activity details (up to 128 UTF-8 bytes)"
+#define DISCORD_SECONDS_LABEL       L"Elapsed seconds (refreshes every 10s; blank: auto)"
+#define DISCORD_SECONDS_ERROR       L"Enter a whole number from 0 to 315360000 seconds."
+#define DISCORD_CONFIRM             L"OK"
+#define DISCORD_CANCEL              L"Cancel"
+#define DISCORD_ERROR_TITLE         L"Discord"
+#define DISCORD_LENGTH_ERROR        L"Each field must be at most 128 UTF-8 bytes."
+#define DISCORD_SAVE_ERROR          L"Could not save Discord settings."
+#define DISCORD_DEFAULT_DETAILS     L"Managing windows"
 
 //Link
 #define LINK_STYLE					L"https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles"

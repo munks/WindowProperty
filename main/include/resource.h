@@ -10,6 +10,14 @@
 #define ID_DLG_NAME				4	//Change Name
 #define ID_DLG_PROP				5 	//Prop Change
 #define ID_DLG_HOTKEY			6 	//Change Hotkey
+#define ID_DLG_DISCORD            7
+#define ID_DISCORD_ENABLED        510
+#define ID_DISCORD_DETAILS        511
+#define ID_DISCORD_LABEL          512
+#define ID_DISCORD_NAME           513
+#define ID_DISCORD_NAME_LABEL     514
+#define ID_DISCORD_SECONDS        515
+#define ID_DISCORD_SECONDS_LABEL  516
 
 #define ID_BUTTON_PROP			100
 #define ID_BUTTON_NAME			101
@@ -104,5 +112,6 @@
 #define TN_MENU_RT				3
 #define TN_MENU_CLOSE			4
 #define TN_MENU_LOG				5
+#define TN_MENU_DISCORD           6
 
 #define TN_CLICK				100
