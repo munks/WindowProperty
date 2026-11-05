@@ -107,7 +107,7 @@
 #define DISCORD_ENABLED_TEXT        L"Discord 활동 상태 표시"
 #define DISCORD_NAME_LABEL          L"표시 이름 (비우면 Discord 앱 이름 사용)"
 #define DISCORD_DETAILS_LABEL       L"활동 내용 (UTF-8 최대 128바이트)"
-#define DISCORD_SECONDS_LABEL       L"경과 시간(초, 10초마다 갱신, 비우면 자동)"
+#define DISCORD_SECONDS_LABEL       L"경과 시간(초, 5초마다 갱신, 비우면 자동)"
 #define DISCORD_SECONDS_ERROR       L"0부터 315360000까지의 정수(초)를 입력하세요."
 #define DISCORD_CONFIRM             L"확인"
 #define DISCORD_CANCEL              L"취소"
@@ -115,6 +115,14 @@
 #define DISCORD_LENGTH_ERROR        L"각 항목은 UTF-8 기준 128바이트를 넘을 수 없습니다."
 #define DISCORD_SAVE_ERROR          L"Discord 설정을 저장하지 못했습니다."
 #define DISCORD_DEFAULT_DETAILS     L"창 관리 중"
+#define DISCORD_STATE_LABEL         L"추가 상태 (선택)"
+#define DISCORD_LARGE_LABEL         L"큰 이미지: 에셋 키 또는 URL"
+#define DISCORD_SMALL_LABEL         L"작은 이미지: 에셋 키 또는 URL"
+#define DISCORD_IMAGE_TEXT_LABEL    L"이미지 설명"
+#define DISCORD_BUTTON1_LABEL       L"버튼 1: 이름 / URL"
+#define DISCORD_BUTTON2_LABEL       L"버튼 2: 이름 / URL"
+#define DISCORD_BUTTON_ERROR        L"각 버튼의 이름과 http:// 또는 https:// URL을 모두 입력하세요. 이름은 32자 이하여야 합니다."
+#define DISCORD_FIELD_ERROR         L"입력한 내용이 허용된 길이를 넘거나 올바르지 않습니다."
 
 //Link
 #define LINK_STYLE					L"https://learn.microsoft.com/ko-kr/windows/win32/winmsg/window-styles"

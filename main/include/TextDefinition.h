@@ -107,7 +107,7 @@
 #define DISCORD_ENABLED_TEXT        L"Show Discord activity"
 #define DISCORD_NAME_LABEL          L"Display name (blank uses Discord app name)"
 #define DISCORD_DETAILS_LABEL       L"Activity details (up to 128 UTF-8 bytes)"
-#define DISCORD_SECONDS_LABEL       L"Elapsed seconds (refreshes every 10s; blank: auto)"
+#define DISCORD_SECONDS_LABEL       L"Elapsed seconds (refreshes every 5s; blank: auto)"
 #define DISCORD_SECONDS_ERROR       L"Enter a whole number from 0 to 315360000 seconds."
 #define DISCORD_CONFIRM             L"OK"
 #define DISCORD_CANCEL              L"Cancel"
@@ -115,6 +115,14 @@
 #define DISCORD_LENGTH_ERROR        L"Each field must be at most 128 UTF-8 bytes."
 #define DISCORD_SAVE_ERROR          L"Could not save Discord settings."
 #define DISCORD_DEFAULT_DETAILS     L"Managing windows"
+#define DISCORD_STATE_LABEL         L"Additional state (optional)"
+#define DISCORD_LARGE_LABEL         L"Large image: asset key or URL"
+#define DISCORD_SMALL_LABEL         L"Small image: asset key or URL"
+#define DISCORD_IMAGE_TEXT_LABEL    L"Image hover text"
+#define DISCORD_BUTTON1_LABEL       L"Button 1: label / URL"
+#define DISCORD_BUTTON2_LABEL       L"Button 2: label / URL"
+#define DISCORD_BUTTON_ERROR        L"Each button needs both a label and an http:// or https:// URL. Labels must be at most 32 characters."
+#define DISCORD_FIELD_ERROR         L"One or more fields exceed the allowed length or contain invalid text."
 
 //Link
 #define LINK_STYLE					L"https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles"

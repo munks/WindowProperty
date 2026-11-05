@@ -7,11 +7,12 @@
 #include <ctime>
 #include <string>
 #include <mutex>
+#include <array>
 
 namespace {
 constexpr char ApplicationId[] = "1567673678072914011";
 constexpr DWORD MaxFrame = 64 * 1024;
-constexpr ULONGLONG TimerRefreshMs = 10000;
+constexpr ULONGLONG TimerRefreshMs = 5000;
 HANDLE stopEvent = nullptr;
 HANDLE worker = nullptr;
 HANDLE updateEvent = nullptr;
@@ -20,6 +21,21 @@ std::string activityDetails;
 std::string activityName;
 long long programStarted = 0;
 long long fixedSeconds = -1;
+
+enum ExtraField { State, LargeImage, LargeText, SmallImage, SmallText, Button1Text, Button1Url, Button2Text, Button2Url, ExtraCount };
+struct FieldDefinition { int control; const wchar_t* registry; int maxChars; size_t maxBytes; };
+constexpr FieldDefinition ExtraFields[ExtraCount] = {
+    {ID_DISCORD_STATE, L"DiscordState", 128, 128},
+    {ID_DISCORD_LARGE_IMAGE, L"DiscordLargeImage", 512, 512},
+    {ID_DISCORD_LARGE_TEXT, L"DiscordLargeText", 128, 128},
+    {ID_DISCORD_SMALL_IMAGE, L"DiscordSmallImage", 512, 512},
+    {ID_DISCORD_SMALL_TEXT, L"DiscordSmallText", 128, 128},
+    {ID_DISCORD_BUTTON1_TEXT, L"DiscordButton1Text", 32, 128},
+    {ID_DISCORD_BUTTON1_URL, L"DiscordButton1Url", 512, 512},
+    {ID_DISCORD_BUTTON2_TEXT, L"DiscordButton2Text", 32, 128},
+    {ID_DISCORD_BUTTON2_URL, L"DiscordButton2Url", 512, 512}
+};
+std::array<std::string, ExtraCount> extraValues;
 
 std::string JsonEscape(const std::string& text) {
     static constexpr char hex[] = "0123456789abcdef";
@@ -32,9 +48,9 @@ std::string JsonEscape(const std::string& text) {
     return result;
 }
 
-bool ToUtf8(const wchar_t* text, std::string& result) {
+bool ToUtf8(const wchar_t* text, std::string& result, size_t maxBytes = 128) {
     int size = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text, -1, nullptr, 0, nullptr, nullptr);
-    if (!size || size - 1 > 128) return false;
+    if (!size || static_cast<size_t>(size - 1) > maxBytes) return false;
     result.resize(size);
     if (!WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text, -1, result.data(), size, nullptr, nullptr)) return false;
     result.pop_back();
@@ -88,10 +104,31 @@ bool SendActivity(HANDLE pipe) {
         ? programStarted : static_cast<long long>(time(nullptr)) - fixedSeconds;
     std::string timeField = "\"timestamps\":{\"start\":" + std::to_string(started) + "}";
     static unsigned long long nonce = 0;
+    std::string extras;
+    auto addField = [](std::string& target, const char* key, const std::string& value) {
+        if (!value.empty()) target += std::string("\"") + key + "\":\"" + JsonEscape(value) + "\",";
+    };
+    addField(extras, "state", extraValues[State]);
+    std::string assets;
+    addField(assets, "large_image", extraValues[LargeImage]);
+    if (!extraValues[LargeImage].empty()) addField(assets, "large_text", extraValues[LargeText]);
+    addField(assets, "small_image", extraValues[SmallImage]);
+    if (!extraValues[SmallImage].empty()) addField(assets, "small_text", extraValues[SmallText]);
+    if (!assets.empty()) { assets.pop_back(); extras += "\"assets\":{" + assets + "},"; }
+    std::string buttons;
+    auto addButton = [&buttons](const std::string& label, const std::string& url) {
+        if (!label.empty() && !url.empty()) {
+            if (!buttons.empty()) buttons += ',';
+            buttons += "{\"label\":\"" + JsonEscape(label) + "\",\"url\":\"" + JsonEscape(url) + "\"}";
+        }
+    };
+    addButton(extraValues[Button1Text], extraValues[Button1Url]);
+    addButton(extraValues[Button2Text], extraValues[Button2Url]);
+    if (!buttons.empty()) extras += "\"buttons\":[" + buttons + "],";
     std::string activity = "{\"cmd\":\"SET_ACTIVITY\",\"args\":{\"pid\":" + std::to_string(GetCurrentProcessId())
         + ",\"activity\":{" + (activityName.empty() ? "" : "\"name\":\"" + JsonEscape(activityName) + "\",")
         + (activityDetails.empty() ? "" : "\"details\":\"" + JsonEscape(activityDetails) + "\",")
-        + timeField + "}},\"nonce\":\"" + std::to_string(++nonce) + "\"}";
+        + extras + timeField + "}},\"nonce\":\"" + std::to_string(++nonce) + "\"}";
     return WriteFrame(pipe, 1, activity);
 }
 
@@ -136,6 +173,26 @@ DWORD WINAPI Run(void*) {
 }
 
 namespace {
+void ReadExtraFields(std::array<std::wstring, ExtraCount>& values) {
+    for (size_t i = 0; i < ExtraCount; ++i) {
+        wchar_t value[513]{};
+        DWORD size = sizeof(value);
+        if (RegGetValueW(m_regset, nullptr, ExtraFields[i].registry, RRF_RT_REG_SZ, nullptr, value, &size) == ERROR_SUCCESS)
+            values[i] = value;
+    }
+}
+
+bool ValidButton(const std::wstring& label, const std::wstring& url) {
+    if (label.empty() && url.empty()) return true;
+    if (label.empty() || label.size() > 32 || url.empty()) return false;
+    size_t start = 0;
+    if (url.compare(0, 8, L"https://") == 0) start = 8;
+    else if (url.compare(0, 7, L"http://") == 0) start = 7;
+    else return false;
+    if (start == url.size() || url[start] == L'/' || url[start] == L'?' || url[start] == L'#') return false;
+    return url.find_first_of(L" \t\r\n") == std::wstring::npos;
+}
+
 void ReadSettings(bool& enabled, wchar_t (&details)[129], wchar_t (&name)[129], wchar_t (&seconds)[10]) {
     DWORD value = 0, size = sizeof(value);
     enabled = RegGetValueW(m_regset, nullptr, L"DiscordEnabled", RRF_RT_REG_DWORD, nullptr, &value, &size) == ERROR_SUCCESS && value == 1;
@@ -175,6 +232,19 @@ INT_PTR CALLBACK SettingsProc(HWND dialog, UINT message, WPARAM wParam, LPARAM) 
         SetDlgItemTextW(dialog, ID_DISCORD_SECONDS_LABEL, DISCORD_SECONDS_LABEL);
         SetDlgItemTextW(dialog, ID_DISCORD_SECONDS, seconds);
         SendDlgItemMessageW(dialog, ID_DISCORD_SECONDS, EM_SETLIMITTEXT, 9, 0);
+        SetDlgItemTextW(dialog, ID_DISCORD_STATE_LABEL, DISCORD_STATE_LABEL);
+        SetDlgItemTextW(dialog, ID_DISCORD_LARGE_LABEL, DISCORD_LARGE_LABEL);
+        SetDlgItemTextW(dialog, ID_DISCORD_LARGE_TEXT_LABEL, DISCORD_IMAGE_TEXT_LABEL);
+        SetDlgItemTextW(dialog, ID_DISCORD_SMALL_LABEL, DISCORD_SMALL_LABEL);
+        SetDlgItemTextW(dialog, ID_DISCORD_SMALL_TEXT_LABEL, DISCORD_IMAGE_TEXT_LABEL);
+        SetDlgItemTextW(dialog, ID_DISCORD_BUTTON1_LABEL, DISCORD_BUTTON1_LABEL);
+        SetDlgItemTextW(dialog, ID_DISCORD_BUTTON2_LABEL, DISCORD_BUTTON2_LABEL);
+        std::array<std::wstring, ExtraCount> extras{};
+        ReadExtraFields(extras);
+        for (size_t i = 0; i < ExtraCount; ++i) {
+            SetDlgItemTextW(dialog, ExtraFields[i].control, extras[i].c_str());
+            SendDlgItemMessageW(dialog, ExtraFields[i].control, EM_SETLIMITTEXT, ExtraFields[i].maxChars, 0);
+        }
         SetDlgItemTextW(dialog, ID_DISCORD_DETAILS, details);
         SendDlgItemMessageW(dialog, ID_DISCORD_DETAILS, EM_SETLIMITTEXT, 128, 0);
         CheckDlgButton(dialog, ID_DISCORD_ENABLED, enabled ? BST_CHECKED : BST_UNCHECKED);
@@ -201,7 +271,28 @@ INT_PTR CALLBACK SettingsProc(HWND dialog, UINT message, WPARAM wParam, LPARAM) 
             MessageBoxW(dialog, DISCORD_LENGTH_ERROR, DISCORD_ERROR_TITLE, MB_OK | MB_ICONWARNING);
             return TRUE;
         }
+        std::array<std::wstring, ExtraCount> extras{};
+        std::array<std::string, ExtraCount> extraUtf8{};
+        for (size_t i = 0; i < ExtraCount; ++i) {
+            wchar_t value[513]{};
+            GetDlgItemTextW(dialog, ExtraFields[i].control, value, ARRAYSIZE(value));
+            extras[i] = value;
+            if (!ToUtf8(value, extraUtf8[i], ExtraFields[i].maxBytes)) {
+                MessageBoxW(dialog, DISCORD_FIELD_ERROR, DISCORD_ERROR_TITLE, MB_OK | MB_ICONWARNING);
+                return TRUE;
+            }
+        }
+        if (!ValidButton(extras[Button1Text], extras[Button1Url]) || !ValidButton(extras[Button2Text], extras[Button2Url])) {
+            MessageBoxW(dialog, DISCORD_BUTTON_ERROR, DISCORD_ERROR_TITLE, MB_OK | MB_ICONWARNING);
+            return TRUE;
+        }
         DWORD enabled = IsDlgButtonChecked(dialog, ID_DISCORD_ENABLED) == BST_CHECKED ? 1 : 0;
+        for (size_t i = 0; i < ExtraCount; ++i) {
+            if (RegSetValueExW(m_regset, ExtraFields[i].registry, 0, REG_SZ, reinterpret_cast<const BYTE*>(extras[i].c_str()), static_cast<DWORD>((extras[i].size() + 1) * sizeof(wchar_t))) != ERROR_SUCCESS) {
+                MessageBoxW(dialog, DISCORD_SAVE_ERROR, DISCORD_ERROR_TITLE, MB_OK | MB_ICONERROR);
+                return TRUE;
+            }
+        }
         if (RegSetValueExW(m_regset, L"DiscordFixedSeconds", 0, REG_SZ, reinterpret_cast<const BYTE*>(seconds), static_cast<DWORD>((wcslen(seconds) + 1) * sizeof(wchar_t))) != ERROR_SUCCESS ||
             RegSetValueExW(m_regset, L"DiscordName", 0, REG_SZ, reinterpret_cast<const BYTE*>(name), static_cast<DWORD>((wcslen(name) + 1) * sizeof(wchar_t))) != ERROR_SUCCESS ||
             RegSetValueExW(m_regset, L"DiscordDetails", 0, REG_SZ, reinterpret_cast<const BYTE*>(details), static_cast<DWORD>((wcslen(details) + 1) * sizeof(wchar_t))) != ERROR_SUCCESS ||
@@ -214,6 +305,7 @@ INT_PTR CALLBACK SettingsProc(HWND dialog, UINT message, WPARAM wParam, LPARAM) 
             std::lock_guard<std::mutex> guard(settingsMutex);
             activityDetails = std::move(utf8);
             activityName = std::move(nameUtf8);
+            extraValues = std::move(extraUtf8);
             fixedSeconds = parsedSeconds;
         }
         if (enabled) {
@@ -244,6 +336,11 @@ void DiscordPresence_Initialize() {
     ReadSettings(enabled, details, name, seconds);
     if (!ToUtf8(details, activityDetails)) ToUtf8(DISCORD_DEFAULT_DETAILS, activityDetails);
     if (!ToUtf8(name, activityName)) activityName.clear();
+    std::array<std::wstring, ExtraCount> extras{};
+    ReadExtraFields(extras);
+    for (size_t i = 0; i < ExtraCount; ++i) {
+        if (!ToUtf8(extras[i].c_str(), extraValues[i], ExtraFields[i].maxBytes)) extraValues[i].clear();
+    }
     if (!ParseSeconds(seconds, fixedSeconds)) fixedSeconds = -1;
     if (enabled) DiscordPresence_Start();
 }
